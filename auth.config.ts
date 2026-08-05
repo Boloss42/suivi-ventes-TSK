@@ -6,6 +6,10 @@ import type { NextAuthConfig } from "next-auth";
  * ajoutée dans auth.ts, qui étend cette config pour le reste de l'app.
  */
 export const authConfig = {
+  // Nécessaire derrière un reverse proxy (Railway, Render...) : sans ça,
+  // Auth.js refuse de faire confiance au nom de domaine transmis par l'hébergeur
+  // et renvoie "There was a problem with the server configuration".
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
