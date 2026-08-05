@@ -1,0 +1,241 @@
+# Transakauto — Suivi de vente de véhicules
+
+Application web de suivi des annonces de véhicules en dépôt-vente. Deux
+espaces distincts :
+
+- **Espace personnel (staff)** : gestion des clients, des véhicules et
+  saisie hebdomadaire des statistiques d'annonce.
+- **Espace client** : consultation en lecture seule de ses propres
+  véhicules et de l'évolution de leurs statistiques (graphiques + historique).
+
+## Stack technique
+
+- [Next.js 15](https://nextjs.org/) (App Router) + TypeScript
+- [Tailwind CSS 4](https://tailwindcss.com/)
+- [Prisma ORM](https://www.prisma.io/) — PostgreSQL (dev et prod, ex. [Neon](https://neon.tech) ou [Supabase](https://supabase.com) en free tier)
+- [Auth.js / NextAuth v5](https://authjs.dev/) — authentification par email + mot de passe, avec rôles (`STAFF` / `CLIENT`)
+- [Recharts](https://recharts.org/) — graphiques d'évolution côté client
+- [Zod](https://zod.dev/) — validation des formulaires
+
+## Installation
+
+Prérequis : Node.js 20+, npm, et une base PostgreSQL.
+
+Le plus simple pour une base PostgreSQL (dev comme prod) : un projet gratuit
+sur [neon.tech](https://neon.tech) ou [supabase.com](https://supabase.com)
+(aucune installation locale requise). Une instance Postgres locale (Postgres.app,
+Docker...) fonctionne aussi.
+
+```bash
+npm install
+```
+
+Copier le fichier d'environnement :
+
+```bash
+cp .env.example .env
+```
+
+Éditer `.env` :
+- `DATABASE_URL` : l'URL de connexion PostgreSQL (fournie par Neon/Supabase,
+  ou la vôtre).
+- `AUTH_SECRET` : une valeur générée avec `openssl rand -base64 32`.
+
+## Base de données
+
+Appliquer les migrations :
+
+```bash
+npx prisma migrate dev
+```
+
+Charger le jeu de données de démonstration (clients, véhicules, relevés
+hebdomadaires) :
+
+```bash
+npx prisma db seed
+```
+
+> `npx prisma migrate dev` propose automatiquement d'exécuter le seed après
+> la première migration. Vous pouvez relancer `npx prisma db seed` à tout
+> moment pour réinitialiser les données de démonstration (il supprime les
+> données existantes avant de recréer le jeu de démo).
+
+## Lancer l'application en local
+
+```bash
+npm run dev
+```
+
+L'application est disponible sur [http://localhost:3000](http://localhost:3000).
+
+## Identifiants de test
+
+| Rôle   | Email                       | Mot de passe   |
+|--------|------------------------------|----------------|
+| Staff  | `staff@transakauto.fr`       | `Staff1234!`   |
+| Client | `martin.dupont@example.com`  | `Client1234!`  |
+| Client | `sophie.bernard@example.com` | `Client1234!`  |
+| Client | `ahmed.khalil@example.com`   | `Client1234!`  |
+
+Ces comptes sont créés par `prisma/seed.ts`. Le compte staff a accès à tout ;
+chaque compte client ne voit que ses propres véhicules (isolation vérifiée
+à la fois par le middleware de routage et par un filtrage explicite en base
+de données sur chaque requête).
+
+## Organisation du code
+
+```
+app/
+  login/               Page de connexion (commune staff/client)
+  staff/               Espace personnel (protégé par le middleware, rôle STAFF)
+    dashboard/         Tableau de bord (KPIs, relevés manquants de la semaine)
+    clients/           Liste, création, fiche détaillée des clients
+    vehicles/           Liste, création, fiche véhicule, saisie des relevés
+  client/              Espace client (protégé par le middleware, rôle CLIENT)
+    dashboard/         Liste des véhicules du client connecté
+    vehicles/[id]/     Fiche véhicule en lecture seule + graphiques
+  api/auth/            Route handler Auth.js
+
+auth.ts, auth.config.ts, middleware.ts   Configuration de l'authentification
+                                          et protection des routes par rôle
+
+lib/
+  actions/             Server Actions (mutations : clients, véhicules, relevés)
+  prisma.ts            Client Prisma singleton
+  session.ts           Helpers requireStaff() / requireClient()
+  validation.ts         Schémas Zod
+  storage.ts            Stockage des photos uploadées
+
+prisma/
+  schema.prisma        Modèle de données
+  seed.ts               Jeu de données de démonstration
+
+components/            Composants partagés (navigation, formulaires, graphiques)
+```
+
+## Modèle de données
+
+- `User` — compte de connexion (email, mot de passe hashé, rôle)
+- `Client` — coordonnées d'un client, rattaché à un `User`
+- `Vehicle` — véhicule en dépôt-vente, rattaché à un `Client`
+- `ListingUrl` — lien(s) vers l'annonce (LeBonCoin, La Centrale, AutoScout24…)
+- `Photo` — photo(s) du véhicule
+- `WeeklyStat` — relevé hebdomadaire de statistiques (vues, contacts, appels,
+  favoris, visites, offres, note), un relevé unique par véhicule et par semaine
+- `Notification` — notification in-app envoyée à un client lorsqu'un nouveau
+  relevé est saisi pour l'un de ses véhicules
+
+Le schéma complet est dans [`prisma/schema.prisma`](prisma/schema.prisma).
+
+### Ajouter un nouvel indicateur de statistique
+
+Les champs de `WeeklyStat` sont volontairement des colonnes typées simples
+(pas de schéma dynamique) pour rester faciles à comprendre et à afficher.
+Pour ajouter un indicateur :
+
+1. Ajouter la colonne dans `prisma/schema.prisma` (modèle `WeeklyStat`).
+2. Lancer `npx prisma migrate dev --name add_<indicateur>`.
+3. Ajouter le champ correspondant dans `lib/validation.ts` (`weeklyStatSchema`).
+4. Ajouter le champ au formulaire (`components/StatForm.tsx`) et à son
+   traitement (`lib/actions/stats.ts`).
+5. Afficher le nouvel indicateur dans les pages concernées (historique staff
+   `app/staff/vehicles/[id]/page.tsx`, fiche client
+   `app/client/vehicles/[id]/page.tsx`, et le graphique
+   `components/client/StatsChart.tsx`).
+
+## Photos des véhicules
+
+En développement, les photos uploadées sont stockées sur disque local dans
+`public/uploads/vehicles/<id-véhicule>/`. Cette logique est isolée dans
+[`lib/storage.ts`](lib/storage.ts) : pour un déploiement sur une
+infrastructure multi-instance ou serverless, remplacer ce module par un
+stockage objet (S3, Cloudinary...) sans toucher au reste de l'application.
+
+La première photo d'un véhicule (ajoutée via le formulaire
+« Modifier »/« Nouveau véhicule ») sert de vignette dans le tableau de bord
+staff (section « Véhicules en vente ») et dans la liste `/staff/vehicles`.
+Le jeu de données de démonstration ne contient pas de photos réelles ; tant
+qu'aucune photo n'est ajoutée, une icône générique s'affiche à la place.
+
+## Activation du compte client
+
+Lorsque le staff crée un client (formulaire « Nouveau client », ou directement
+depuis « + Nouveau client » dans le formulaire véhicule), aucun mot de passe
+n'est généré ni affiché en clair. À la place, l'application propose :
+
+- un **lien d'activation** (`/activate/<token>`), copiable en un clic ;
+- le **QR code** correspondant, à faire scanner par le client.
+
+Le staff transmet ce lien/QR par le moyen de son choix (SMS, email, papier...).
+Le client l'ouvre, choisit lui-même son mot de passe, et est connecté
+automatiquement à son espace. Le lien est valable **7 jours** ; passé ce
+délai (ou s'il est perdu), le bouton « Générer un lien d'activation » sur la
+fiche client (espace staff) permet d'en émettre un nouveau à tout moment.
+
+Cette logique est isolée dans [`lib/invite.ts`](lib/invite.ts) (génération du
+jeton, de l'URL et du QR code via le paquet `qrcode`) et
+[`lib/actions/activate.ts`](lib/actions/activate.ts) (validation du jeton,
+définition du mot de passe, connexion automatique).
+
+> Les comptes du jeu de données de démonstration (`prisma/seed.ts`) gardent
+> volontairement un mot de passe fixe et connu (voir tableau ci-dessus) pour
+> pouvoir tester l'application immédiatement, sans passer par ce flux.
+
+## Notifications client
+
+Lorsqu'un membre du personnel saisit un **nouveau** relevé hebdomadaire pour
+un véhicule (`+ Saisir un relevé`), une notification in-app est créée pour le
+client propriétaire. Elle apparaît sous forme de pastille sur la cloche 🔔 en
+haut de son espace, avec le détail dans le menu déroulant ; elle est marquée
+comme lue automatiquement à l'ouverture du menu. Modifier un relevé existant
+ne génère pas de nouvelle notification (pour éviter le bruit lors de
+corrections). Ce système fonctionne entièrement en base de données (modèle
+`Notification`), sans service d'email à configurer.
+
+## Déploiement
+
+L'application est prête à être déployée telle quelle sur un hébergeur offrant
+un **disque persistant** (pour les photos uploadées dans `public/uploads/`) —
+par exemple [Railway](https://railway.app) ou [Render](https://render.com).
+Les deux fonctionnent de façon quasi identique :
+
+1. Pousser le code sur un dépôt Git (GitHub/GitLab) et connecter ce dépôt
+   depuis le tableau de bord Railway/Render.
+2. Ajouter une base **PostgreSQL** (Railway : bouton « + New » → Database ;
+   Render : « New » → PostgreSQL), ou réutiliser un projet Neon/Supabase
+   existant.
+3. Définir les variables d'environnement du service web :
+   - `DATABASE_URL` — l'URL fournie par la base Postgres ci-dessus.
+   - `AUTH_SECRET` — une valeur **différente** de celle utilisée en local
+     (générée avec `openssl rand -base64 32`).
+4. Monter un **volume persistant** sur le chemin `public/uploads` (sans quoi
+   les photos disparaissent à chaque redéploiement).
+5. Commande de build : `npm run build`. Avant celle-ci (ou dans un « release
+   command » si la plateforme le propose), exécuter :
+   ```bash
+   npx prisma migrate deploy
+   ```
+   pour appliquer les migrations sur la base de production sans invite
+   interactive.
+6. Commande de démarrage : `npm run start`.
+
+Les liens d'invitation client (`/activate/<token>`) et le middleware
+d'authentification s'adaptent automatiquement au nom de domaine du
+déploiement — aucune configuration d'URL supplémentaire n'est nécessaire.
+
+> Alternative : Vercel offre la meilleure intégration Next.js mais son
+> filesystem est éphémère (pas de disque persistant). Y déployer suppose de
+> remplacer le stockage local des photos (`lib/storage.ts`) par un stockage
+> objet (Vercel Blob, S3, Cloudinary...).
+
+## Commandes utiles
+
+```bash
+npm run dev            # Serveur de développement
+npm run build           # Build de production
+npm run start           # Démarrer le build de production
+npm run lint             # Linter
+npx prisma studio        # Interface graphique pour explorer la base de données
+npx prisma migrate dev   # Créer/appliquer une migration en développement
+```
