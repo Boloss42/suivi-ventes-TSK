@@ -185,6 +185,18 @@ définition du mot de passe, connexion automatique).
 > volontairement un mot de passe fixe et connu (voir tableau ci-dessus) pour
 > pouvoir tester l'application immédiatement, sans passer par ce flux.
 
+## Gestion de l'équipe (`/staff/team`)
+
+N'importe quel compte staff peut créer un nouveau compte staff depuis
+« Équipe » : il suffit de renseigner l'email du collègue. Comme pour un
+client, aucun mot de passe n'est généré en clair : un lien
+d'activation/QR code est proposé, à transmettre au collègue pour qu'il
+choisisse lui-même son mot de passe (même mécanisme que
+[l'activation du compte client](#activation-du-compte-client)). Un compte
+staff a accès à l'ensemble des clients et véhicules, sans restriction. La
+suppression d'un compte staff est possible depuis cette page, sauf pour son
+propre compte ou s'il ne reste qu'un seul compte staff.
+
 ## Notifications client
 
 Lorsqu'un membre du personnel saisit un **nouveau** relevé hebdomadaire pour

@@ -5,6 +5,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Mot de passe requis"),
 });
 
+export const staffAccountSchema = z.object({
+  email: z.string().email("Adresse email invalide"),
+});
+
 export const clientSchema = z.object({
   firstName: z.string().min(1, "Prénom requis"),
   lastName: z.string().min(1, "Nom requis"),

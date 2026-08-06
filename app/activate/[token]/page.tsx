@@ -29,7 +29,9 @@ export default async function ActivatePage({
       <div className="w-full max-w-sm rounded-xl border border-ink-100 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
           <h1 className="text-xl font-semibold text-brand-500">Mon suivi perso</h1>
-          <p className="mt-1 text-sm text-ink-500">Activez votre espace client</p>
+          <p className="mt-1 text-sm text-ink-500">
+            {user.role === "STAFF" ? "Activez votre accès staff" : "Activez votre espace client"}
+          </p>
         </div>
         <ActivateForm token={token} email={user.email} />
       </div>
