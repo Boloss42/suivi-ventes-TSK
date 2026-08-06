@@ -7,7 +7,7 @@ export default async function StaffProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { phone: true },
+    select: { firstName: true, phone: true },
   });
 
   return (
@@ -18,7 +18,10 @@ export default async function StaffProfilePage() {
         <p className="mb-4 text-sm text-ink-500">
           Connecté en tant que <span className="font-medium text-ink-800">{session.user.email}</span>
         </p>
-        <ProfileForm currentPhone={user?.phone ?? ""} />
+        <ProfileForm
+          currentFirstName={user?.firstName ?? ""}
+          currentPhone={user?.phone ?? ""}
+        />
       </div>
     </div>
   );

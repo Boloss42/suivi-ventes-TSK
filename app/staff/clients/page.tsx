@@ -1,19 +1,38 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
+import SearchField from "@/components/SearchField";
 
-export default async function ClientsPage() {
+export default async function ClientsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const { agencyId, userId } = await requireStaff();
+  const { q } = await searchParams;
 
   const clients = await prisma.client.findMany({
-    where: { agencyId, assignedStaffId: userId },
+    where: {
+      agencyId,
+      assignedStaffId: userId,
+      ...(q
+        ? {
+            OR: [
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q, mode: "insensitive" } },
+              { user: { email: { contains: q, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    },
     include: { user: true, _count: { select: { vehicles: true } } },
     orderBy: { createdAt: "desc" },
   });
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink-900">Clients</h1>
         <Link
           href="/staff/clients/new"
@@ -21,6 +40,10 @@ export default async function ClientsPage() {
         >
           + Nouveau client
         </Link>
+      </div>
+
+      <div className="mb-4">
+        <SearchField placeholder="Rechercher un client (nom, email, téléphone)..." />
       </div>
 
       <div className="overflow-hidden rounded-lg border border-ink-100 bg-white">
@@ -57,7 +80,7 @@ export default async function ClientsPage() {
             {clients.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-ink-400">
-                  Aucun client pour le moment.
+                  {q ? "Aucun client ne correspond à cette recherche." : "Aucun client pour le moment."}
                 </td>
               </tr>
             )}

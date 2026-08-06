@@ -24,8 +24,9 @@ model User {
   email                String    @unique
   passwordHash         String
   role                 Role
-  // Renseigné par l'agent lui-même (page "Mon profil") : affiché à ses
-  // clients pour qu'ils puissent le joindre directement.
+  // Renseignés par l'agent lui-même (page "Mon profil") : affichés à ses
+  // clients ("Votre conseillé") pour identifier et joindre leur commercial.
+  firstName            String?
   phone                String?
   // Jeton d'activation : permet au client de définir lui-même son mot de
   // passe via /activate/[token] au lieu de recevoir un mot de passe généré

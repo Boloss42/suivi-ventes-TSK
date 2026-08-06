@@ -16,7 +16,7 @@ export default async function ClientDashboardPage() {
     }),
     prisma.client.findUnique({
       where: { id: clientId },
-      select: { assignedStaff: { select: { email: true, phone: true } } },
+      select: { assignedStaff: { select: { firstName: true, email: true, phone: true } } },
     }),
   ]);
 
@@ -27,10 +27,10 @@ export default async function ClientDashboardPage() {
       {client?.assignedStaff && (
         <div className="mb-6 rounded-lg border border-ink-100 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
-            Votre commercial
+            Votre conseillé
           </p>
           <p className="mt-1 text-sm text-ink-800">
-            {client.assignedStaff.email}
+            {client.assignedStaff.firstName || client.assignedStaff.email}
             {client.assignedStaff.phone && (
               <>
                 {" "}

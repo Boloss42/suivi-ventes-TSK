@@ -7,13 +7,14 @@ import { staffProfileSchema } from "@/lib/validation";
 
 export type ProfileState = { error?: string; success?: boolean };
 
-export async function updateStaffPhone(
+export async function updateStaffProfile(
   _prevState: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
   const { userId } = await requireStaff();
 
   const parsed = staffProfileSchema.safeParse({
+    firstName: formData.get("firstName") || undefined,
     phone: formData.get("phone") || undefined,
   });
   if (!parsed.success) {
@@ -22,7 +23,10 @@ export async function updateStaffPhone(
 
   await prisma.user.update({
     where: { id: userId },
-    data: { phone: parsed.data.phone || null },
+    data: {
+      firstName: parsed.data.firstName || null,
+      phone: parsed.data.phone || null,
+    },
   });
 
   revalidatePath("/staff/profile");

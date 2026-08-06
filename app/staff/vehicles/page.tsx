@@ -3,22 +3,34 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleThumbnail from "@/components/VehicleThumbnail";
+import SearchField from "@/components/SearchField";
 import DeleteVehicleButton from "./DeleteVehicleButton";
 import { formatPrice, formatMileage, vehicleStatusLabels } from "@/lib/format";
 
 export default async function VehiclesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
   const { agencyId, userId } = await requireStaff();
-  const { status } = await searchParams;
+  const { status, q } = await searchParams;
 
   const vehicles = await prisma.vehicle.findMany({
     where: {
       agencyId,
       client: { assignedStaffId: userId },
       ...(status ? { status: status as "EN_VENTE" | "VENDU" | "RETIRE" } : {}),
+      ...(q
+        ? {
+            OR: [
+              { make: { contains: q, mode: "insensitive" } },
+              { model: { contains: q, mode: "insensitive" } },
+              { reference: { contains: q, mode: "insensitive" } },
+              { client: { firstName: { contains: q, mode: "insensitive" } } },
+              { client: { lastName: { contains: q, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
     },
     include: { client: true, photos: { orderBy: { order: "asc" }, take: 1 } },
     orderBy: { createdAt: "desc" },
@@ -31,7 +43,7 @@ export default async function VehiclesPage({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink-900">Véhicules</h1>
         <Link
           href="/staff/vehicles/new"
@@ -41,20 +53,30 @@ export default async function VehiclesPage({
         </Link>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {statusFilters.map((filter) => (
-          <Link
-            key={filter.label}
-            href={filter.value ? `/staff/vehicles?status=${filter.value}` : "/staff/vehicles"}
-            className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
-              status === filter.value
-                ? "border-brand-500 bg-brand-500 text-white"
-                : "border-ink-200 text-ink-600 hover:bg-white"
-            }`}
-          >
-            {filter.label}
-          </Link>
-        ))}
+      <div className="mb-4">
+        <SearchField placeholder="Rechercher un véhicule (marque, modèle, référence, client)..." />
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {statusFilters.map((filter) => {
+          const params = new URLSearchParams();
+          if (filter.value) params.set("status", filter.value);
+          if (q) params.set("q", q);
+          const query = params.toString();
+          return (
+            <Link
+              key={filter.label}
+              href={query ? `/staff/vehicles?${query}` : "/staff/vehicles"}
+              className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
+                status === filter.value
+                  ? "border-brand-500 bg-brand-500 text-white"
+                  : "border-ink-200 text-ink-600 hover:bg-white"
+              }`}
+            >
+              {filter.label}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="rounded-lg border border-ink-100 bg-white">
@@ -116,7 +138,7 @@ export default async function VehiclesPage({
               {vehicles.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-ink-400">
-                    Aucun véhicule.
+                    {q ? "Aucun véhicule ne correspond à cette recherche." : "Aucun véhicule."}
                   </td>
                 </tr>
               )}

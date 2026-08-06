@@ -10,6 +10,7 @@ export const staffAccountSchema = z.object({
 });
 
 export const staffProfileSchema = z.object({
+  firstName: z.string().optional(),
   phone: z.string().optional(),
 });
 
