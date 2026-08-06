@@ -8,15 +8,44 @@ import { formatPrice, formatMileage } from "@/lib/format";
 export default async function ClientDashboardPage() {
   const { clientId } = await requireClient();
 
-  const vehicles = await prisma.vehicle.findMany({
-    where: { clientId },
-    include: { photos: { orderBy: { order: "asc" }, take: 1 } },
-    orderBy: { createdAt: "desc" },
-  });
+  const [vehicles, client] = await Promise.all([
+    prisma.vehicle.findMany({
+      where: { clientId },
+      include: { photos: { orderBy: { order: "asc" }, take: 1 } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.client.findUnique({
+      where: { id: clientId },
+      select: { assignedStaff: { select: { email: true, phone: true } } },
+    }),
+  ]);
 
   return (
     <div>
       <h1 className="mb-6 text-xl font-semibold text-ink-900">Mes véhicules</h1>
+
+      {client?.assignedStaff && (
+        <div className="mb-6 rounded-lg border border-ink-100 bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
+            Votre commercial
+          </p>
+          <p className="mt-1 text-sm text-ink-800">
+            {client.assignedStaff.email}
+            {client.assignedStaff.phone && (
+              <>
+                {" "}
+                ·{" "}
+                <a
+                  href={`tel:${client.assignedStaff.phone.replace(/\s+/g, "")}`}
+                  className="font-medium text-brand-700 hover:underline"
+                >
+                  {client.assignedStaff.phone}
+                </a>
+              </>
+            )}
+          </p>
+        </div>
+      )}
 
       {vehicles.length === 0 ? (
         <p className="rounded-lg border border-dashed border-ink-200 bg-white p-8 text-center text-ink-400">

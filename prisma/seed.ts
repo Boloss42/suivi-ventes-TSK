@@ -39,12 +39,13 @@ async function main() {
   });
 
   const staffPasswordHash = await bcrypt.hash(STAFF_PASSWORD, 10);
-  await prisma.user.create({
+  const staffUser = await prisma.user.create({
     data: {
       email: "staff@transakauto.fr",
       passwordHash: staffPasswordHash,
       role: "STAFF",
       agencyId: agency.id,
+      phone: "06 00 00 00 00",
     },
   });
 
@@ -53,6 +54,7 @@ async function main() {
   const martin = await prisma.client.create({
     data: {
       agency: { connect: { id: agency.id } },
+      assignedStaff: { connect: { id: staffUser.id } },
       firstName: "Martin",
       lastName: "Dupont",
       phone: "06 12 34 56 78",
@@ -69,6 +71,7 @@ async function main() {
   const sophie = await prisma.client.create({
     data: {
       agency: { connect: { id: agency.id } },
+      assignedStaff: { connect: { id: staffUser.id } },
       firstName: "Sophie",
       lastName: "Bernard",
       phone: "06 98 76 54 32",
@@ -85,6 +88,7 @@ async function main() {
   const ahmed = await prisma.client.create({
     data: {
       agency: { connect: { id: agency.id } },
+      assignedStaff: { connect: { id: staffUser.id } },
       firstName: "Ahmed",
       lastName: "Khalil",
       phone: "07 11 22 33 44",

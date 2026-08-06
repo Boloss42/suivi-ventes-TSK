@@ -145,17 +145,29 @@ components/            Composants partagés (navigation, formulaires, graphiques
 
 Le schéma complet est dans [`prisma/schema.prisma`](prisma/schema.prisma).
 
-### Cloisonnement par agence
+### Cloisonnement par agence et par agent
 
-Un agent (`STAFF`) ne voit que les données de sa propre agence : chaque
-requête de l'espace staff filtre explicitement par `agencyId` (obtenu via
-`requireStaff()` dans [`lib/session.ts`](lib/session.ts)), et chaque
-récupération par identifiant (fiche client, fiche véhicule, relevé...)
-vérifie la propriété avant de renvoyer quoi que ce soit — même principe que
-l'isolation déjà en place côté client (`clientId`). Le super-admin gère les
-agences et leurs comptes agents, mais ne consulte jamais directement les
-clients/véhicules d'une agence (uniquement des compteurs agrégés sur
-`/admin/agencies/[id]`).
+Deux niveaux de cloisonnement côté staff :
+
+1. **Par agence** : chaque requête de l'espace staff filtre par `agencyId`
+   (obtenu via `requireStaff()` dans [`lib/session.ts`](lib/session.ts)).
+2. **Par agent commercial** : chaque `Client` a un `assignedStaffId` —
+   attribué automatiquement à l'agent qui le crée. Un agent ne voit que ses
+   propres clients (et donc leurs véhicules), pas ceux de ses collègues de la
+   même agence.
+
+Chaque récupération par identifiant (fiche client, fiche véhicule, relevé...)
+vérifie la propriété (agence + agent) avant de renvoyer quoi que ce soit —
+même principe que l'isolation déjà en place côté client (`clientId`). Le
+super-admin gère les agences et leurs comptes agents, mais ne consulte
+jamais directement les clients/véhicules d'une agence (uniquement des
+compteurs agrégés sur `/admin/agencies/[id]`).
+
+Si un compte agent est supprimé, ses clients deviennent **non attribués**
+(`assignedStaffId` repasse à `null`, via `onDelete: SetNull` sur la relation)
+et ne sont visibles d'aucun agent tant que le super-admin ne les a pas
+réattribués à un autre agent de la même agence, depuis la fiche agence — sans
+jamais y voir le détail de leurs véhicules ou autres données.
 
 ### Ajouter un nouvel indicateur de statistique
 
@@ -231,6 +243,12 @@ La fiche agence n'affiche que des compteurs agrégés (nombre de comptes
 agents/quota, nombre de clients/véhicules) — jamais le détail des clients ou
 véhicules d'une agence, pour préserver le cloisonnement des données entre
 agences même vis-à-vis du super-admin.
+
+## Profil agent (`/staff/profile`)
+
+Chaque agent renseigne lui-même son numéro de téléphone depuis « Mon profil ».
+Il est affiché à ses clients (carte « Votre commercial » sur leur tableau de
+bord, avec lien `tel:` cliquable) pour qu'ils puissent le joindre directement.
 
 ## Notifications client
 

@@ -8,10 +8,10 @@ export default async function NewVehiclePage({
 }: {
   searchParams: Promise<{ clientId?: string }>;
 }) {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const { clientId } = await searchParams;
   const clients = await prisma.client.findMany({
-    where: { agencyId },
+    where: { agencyId, assignedStaffId: userId },
     orderBy: { lastName: "asc" },
     select: { id: true, firstName: true, lastName: true },
   });

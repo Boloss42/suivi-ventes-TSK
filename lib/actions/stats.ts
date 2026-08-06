@@ -28,7 +28,7 @@ export async function createWeeklyStat(
   _prevState: StatActionState,
   formData: FormData,
 ): Promise<StatActionState> {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
 
   const parsed = parseStatForm(formData);
   if (!parsed.success) {
@@ -36,7 +36,7 @@ export async function createWeeklyStat(
   }
 
   const vehicle = await prisma.vehicle.findFirst({
-    where: { id: parsed.data.vehicleId, agencyId },
+    where: { id: parsed.data.vehicleId, agencyId, client: { assignedStaffId: userId } },
     select: { clientId: true, make: true, model: true },
   });
   if (!vehicle) {
@@ -90,10 +90,10 @@ export async function updateWeeklyStat(
   _prevState: StatActionState,
   formData: FormData,
 ): Promise<StatActionState> {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
 
   const existingStat = await prisma.weeklyStat.findFirst({
-    where: { id: statId, vehicle: { agencyId } },
+    where: { id: statId, vehicle: { agencyId, client: { assignedStaffId: userId } } },
   });
   if (!existingStat) {
     return { error: "Relevé introuvable." };

@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/format";
 import EditAgencyForm from "./EditAgencyForm";
 import NewAgencyStaffForm from "./NewAgencyStaffForm";
 import AgencyStaffRow from "./AgencyStaffRow";
+import AssignClientRow from "./AssignClientRow";
 
 export default async function AgencyDetailPage({
   params,
@@ -12,17 +13,25 @@ export default async function AgencyDetailPage({
 }) {
   const { id } = await params;
 
-  const agency = await prisma.agency.findUnique({
-    where: { id },
-    include: {
-      staff: { orderBy: { createdAt: "asc" } },
-      _count: { select: { clients: true, vehicles: true } },
-    },
-  });
+  const [agency, unassignedClients] = await Promise.all([
+    prisma.agency.findUnique({
+      where: { id },
+      include: {
+        staff: { orderBy: { createdAt: "asc" } },
+        _count: { select: { clients: true, vehicles: true } },
+      },
+    }),
+    prisma.client.findMany({
+      where: { agencyId: id, assignedStaffId: null },
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: { lastName: "asc" },
+    }),
+  ]);
 
   if (!agency) notFound();
 
   const quotaReached = agency.staff.length >= agency.maxStaffAccounts;
+  const staffOptions = agency.staff.map((user) => ({ id: user.id, email: user.email }));
 
   return (
     <div>
@@ -75,6 +84,29 @@ export default async function AgencyDetailPage({
               </div>
             )}
           </div>
+
+          {unassignedClients.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+              <h2 className="mb-1 text-sm font-semibold text-ink-800">
+                Clients non attribués ({unassignedClients.length})
+              </h2>
+              <p className="mb-2 text-sm text-ink-500">
+                Ces clients n&apos;ont plus de commercial (agent supprimé) et ne sont visibles
+                d&apos;aucun agent tant qu&apos;ils ne sont pas réattribués.
+              </p>
+              <div className="divide-y divide-amber-100">
+                {unassignedClients.map((client) => (
+                  <AssignClientRow
+                    key={client.id}
+                    agencyId={agency.id}
+                    clientId={client.id}
+                    clientName={`${client.firstName} ${client.lastName}`}
+                    staffOptions={staffOptions}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

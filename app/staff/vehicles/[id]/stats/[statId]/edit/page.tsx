@@ -9,11 +9,13 @@ export default async function EditStatPage({
 }: {
   params: Promise<{ id: string; statId: string }>;
 }) {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const { id, statId } = await params;
 
   const [vehicle, stat] = await Promise.all([
-    prisma.vehicle.findFirst({ where: { id, agencyId } }),
+    prisma.vehicle.findFirst({
+      where: { id, agencyId, client: { assignedStaffId: userId } },
+    }),
     prisma.weeklyStat.findUnique({ where: { id: statId } }),
   ]);
 

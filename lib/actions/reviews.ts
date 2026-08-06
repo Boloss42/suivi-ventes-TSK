@@ -15,10 +15,12 @@ export async function requestReview(
   _prevState: RequestReviewState,
   formData: FormData,
 ): Promise<RequestReviewState> {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const clientId = formData.get("clientId") as string;
 
-  const client = await prisma.client.findFirst({ where: { id: clientId, agencyId } });
+  const client = await prisma.client.findFirst({
+    where: { id: clientId, agencyId, assignedStaffId: userId },
+  });
   if (!client) {
     return { error: "Client introuvable." };
   }

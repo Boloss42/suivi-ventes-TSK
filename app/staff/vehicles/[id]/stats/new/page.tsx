@@ -10,9 +10,11 @@ export default async function NewStatPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const { id } = await params;
-  const vehicle = await prisma.vehicle.findFirst({ where: { id, agencyId } });
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id, agencyId, client: { assignedStaffId: userId } },
+  });
   if (!vehicle) notFound();
 
   return (

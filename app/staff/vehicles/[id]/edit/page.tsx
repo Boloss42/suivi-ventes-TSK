@@ -9,16 +9,16 @@ export default async function EditVehiclePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const { id } = await params;
 
   const [vehicle, clients] = await Promise.all([
     prisma.vehicle.findFirst({
-      where: { id, agencyId },
+      where: { id, agencyId, client: { assignedStaffId: userId } },
       include: { listingUrls: true, photos: { orderBy: { order: "asc" } } },
     }),
     prisma.client.findMany({
-      where: { agencyId },
+      where: { agencyId, assignedStaffId: userId },
       orderBy: { lastName: "asc" },
       select: { id: true, firstName: true, lastName: true },
     }),

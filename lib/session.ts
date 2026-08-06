@@ -7,7 +7,7 @@ export async function requireStaff() {
   if (!session?.user || session.user.role !== "STAFF") {
     redirect("/login");
   }
-  return { session, agencyId: session.user.agencyId as string };
+  return { session, agencyId: session.user.agencyId as string, userId: session.user.id };
 }
 
 /** À utiliser dans les pages/actions de l'espace admin : vérifie le rôle super-admin. */

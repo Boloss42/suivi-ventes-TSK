@@ -4,11 +4,14 @@ import SettingsForm from "./SettingsForm";
 import ClientReviewRow from "./ClientReviewRow";
 
 export default async function ReviewsPage() {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
 
   const [agency, clients] = await Promise.all([
     prisma.agency.findUnique({ where: { id: agencyId } }),
-    prisma.client.findMany({ where: { agencyId }, orderBy: { lastName: "asc" } }),
+    prisma.client.findMany({
+      where: { agencyId, assignedStaffId: userId },
+      orderBy: { lastName: "asc" },
+    }),
   ]);
 
   const hasReviewUrl = !!agency?.googleReviewUrl;

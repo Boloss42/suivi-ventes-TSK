@@ -24,12 +24,17 @@ model User {
   email                String    @unique
   passwordHash         String
   role                 Role
+  // Renseigné par l'agent lui-même (page "Mon profil") : affiché à ses
+  // clients pour qu'ils puissent le joindre directement.
+  phone                String?
   // Jeton d'activation : permet au client de définir lui-même son mot de
   // passe via /activate/[token] au lieu de recevoir un mot de passe généré
   // en clair. Effacé une fois le compte activé.
   inviteToken          String?   @unique
   inviteTokenExpiresAt DateTime?
-  client               Client?
+  client               Client?   @relation("ClientAccount")
+  // Clients dont cet agent (STAFF) est le commercial attribué.
+  assignedClients      Client[]  @relation("AssignedStaff")
   // Non défini pour SUPER_ADMIN et CLIENT ; obligatoire en pratique pour STAFF
   // (validé côté application, comme clientId ci-dessus).
   agencyId             String?
@@ -57,9 +62,15 @@ model Agency {
 model Client {
   id                String          @id @default(cuid())
   userId            String          @unique
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User            @relation("ClientAccount", fields: [userId], references: [id], onDelete: Cascade)
   agencyId          String
   agency            Agency          @relation(fields: [agencyId], references: [id])
+  // Agent (STAFF) commercial de ce client, attribué automatiquement à la
+  // création (le créateur). Devient null si cet agent est supprimé — le
+  // client n'est alors visible d'aucun agent tant que le super-admin ne l'a
+  // pas réattribué (espace admin, fiche agence).
+  assignedStaffId   String?
+  assignedStaff     User?           @relation("AssignedStaff", fields: [assignedStaffId], references: [id], onDelete: SetNull)
   firstName         String
   lastName          String
   phone             String?
@@ -71,6 +82,7 @@ model Client {
   createdAt         DateTime        @default(now())
 
   @@index([agencyId])
+  @@index([assignedStaffId])
 }
 
 model Vehicle {

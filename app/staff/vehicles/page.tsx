@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleThumbnail from "@/components/VehicleThumbnail";
+import DeleteVehicleButton from "./DeleteVehicleButton";
 import { formatPrice, formatMileage, vehicleStatusLabels } from "@/lib/format";
 
 export default async function VehiclesPage({
@@ -10,12 +11,13 @@ export default async function VehiclesPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const { status } = await searchParams;
 
   const vehicles = await prisma.vehicle.findMany({
     where: {
       agencyId,
+      client: { assignedStaffId: userId },
       ...(status ? { status: status as "EN_VENTE" | "VENDU" | "RETIRE" } : {}),
     },
     include: { client: true, photos: { orderBy: { order: "asc" }, take: 1 } },
@@ -55,59 +57,72 @@ export default async function VehiclesPage({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-ink-100 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-ink-100 bg-ink-50 text-ink-600">
-            <tr>
-              <th className="px-4 py-3 font-medium">Véhicule</th>
-              <th className="px-4 py-3 font-medium">Client</th>
-              <th className="px-4 py-3 font-medium">Kilométrage</th>
-              <th className="px-4 py-3 font-medium">Prix</th>
-              <th className="px-4 py-3 font-medium">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            {vehicles.map((vehicle) => (
-              <tr
-                key={vehicle.id}
-                className="border-b border-ink-50 last:border-0 hover:bg-ink-50/60"
-              >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <VehicleThumbnail
-                      photoUrl={vehicle.photos[0]?.url}
-                      alt={`${vehicle.make} ${vehicle.model}`}
-                    />
-                    <div>
-                      <Link
-                        href={`/staff/vehicles/${vehicle.id}`}
-                        className="font-medium text-brand-700 hover:underline"
-                      >
-                        {vehicle.make} {vehicle.model} ({vehicle.year})
-                      </Link>
-                      <p className="text-xs text-ink-400">{vehicle.reference}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-ink-600">
-                  {vehicle.client.firstName} {vehicle.client.lastName}
-                </td>
-                <td className="px-4 py-3 text-ink-600">{formatMileage(vehicle.mileage)}</td>
-                <td className="px-4 py-3 text-ink-600">{formatPrice(vehicle.price)}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={vehicle.status} />
-                </td>
-              </tr>
-            ))}
-            {vehicles.length === 0 && (
+      <div className="rounded-lg border border-ink-100 bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-ink-100 bg-ink-50 text-ink-600">
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-ink-400">
-                  Aucun véhicule.
-                </td>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Véhicule</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Client</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Kilométrage</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Prix</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Statut</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium"></th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {vehicles.map((vehicle) => (
+                <tr
+                  key={vehicle.id}
+                  className="border-b border-ink-50 last:border-0 hover:bg-ink-50/60"
+                >
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <VehicleThumbnail
+                        photoUrl={vehicle.photos[0]?.url}
+                        alt={`${vehicle.make} ${vehicle.model}`}
+                      />
+                      <div>
+                        <Link
+                          href={`/staff/vehicles/${vehicle.id}`}
+                          className="font-medium text-brand-700 hover:underline"
+                        >
+                          {vehicle.make} {vehicle.model} ({vehicle.year})
+                        </Link>
+                        <p className="text-xs text-ink-400">{vehicle.reference}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-600">
+                    {vehicle.client.firstName} {vehicle.client.lastName}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-600">
+                    {formatMileage(vehicle.mileage)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-600">
+                    {formatPrice(vehicle.price)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <StatusBadge status={vehicle.status} />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <DeleteVehicleButton
+                      vehicleId={vehicle.id}
+                      vehicleLabel={`${vehicle.make} ${vehicle.model} (${vehicle.reference})`}
+                    />
+                  </td>
+                </tr>
+              ))}
+              {vehicles.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-ink-400">
+                    Aucun véhicule.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

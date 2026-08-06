@@ -6,17 +6,18 @@ import { formatPrice, formatMileage } from "@/lib/format";
 import VehicleThumbnail from "@/components/VehicleThumbnail";
 
 export default async function StaffDashboardPage() {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const thisWeek = currentWeekStart();
+  const ownClient = { assignedStaffId: userId };
 
   const [enVenteCount, venduCount, retireCount, clientCount, vehiclesEnVente] =
     await Promise.all([
-      prisma.vehicle.count({ where: { agencyId, status: "EN_VENTE" } }),
-      prisma.vehicle.count({ where: { agencyId, status: "VENDU" } }),
-      prisma.vehicle.count({ where: { agencyId, status: "RETIRE" } }),
-      prisma.client.count({ where: { agencyId } }),
+      prisma.vehicle.count({ where: { agencyId, status: "EN_VENTE", client: ownClient } }),
+      prisma.vehicle.count({ where: { agencyId, status: "VENDU", client: ownClient } }),
+      prisma.vehicle.count({ where: { agencyId, status: "RETIRE", client: ownClient } }),
+      prisma.client.count({ where: { agencyId, assignedStaffId: userId } }),
       prisma.vehicle.findMany({
-        where: { agencyId, status: "EN_VENTE" },
+        where: { agencyId, status: "EN_VENTE", client: ownClient },
         include: {
           client: true,
           weeklyStats: { where: { weekStart: thisWeek } },

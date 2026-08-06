@@ -155,3 +155,34 @@ export async function deleteAgencyStaffAccount(agencyId: string, formData: FormD
 
   revalidatePath(`/admin/agencies/${agencyId}`);
 }
+
+export type ReassignClientState = { error?: string };
+
+/** Attribue (ou réattribue) un client à un agent de la même agence. */
+export async function reassignClient(
+  agencyId: string,
+  _prevState: ReassignClientState,
+  formData: FormData,
+): Promise<ReassignClientState> {
+  await requireSuperAdmin();
+  const clientId = formData.get("clientId") as string;
+  const assignedStaffId = formData.get("assignedStaffId") as string;
+
+  const client = await prisma.client.findFirst({ where: { id: clientId, agencyId } });
+  if (!client) {
+    return { error: "Client introuvable." };
+  }
+
+  const staff = await prisma.user.findFirst({
+    where: { id: assignedStaffId, agencyId, role: "STAFF" },
+  });
+  if (!staff) {
+    return { error: "Agent introuvable." };
+  }
+
+  await prisma.client.update({ where: { id: clientId }, data: { assignedStaffId } });
+
+  revalidatePath(`/admin/agencies/${agencyId}`);
+
+  return {};
+}

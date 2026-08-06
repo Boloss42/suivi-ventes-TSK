@@ -9,6 +9,10 @@ export const staffAccountSchema = z.object({
   email: z.string().email("Adresse email invalide"),
 });
 
+export const staffProfileSchema = z.object({
+  phone: z.string().optional(),
+});
+
 export const agencySchema = z.object({
   name: z.string().min(1, "Nom de l'agence requis"),
   maxStaffAccounts: z.coerce.number().int().min(1, "Le quota doit être d'au moins 1"),

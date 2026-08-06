@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 
 export default async function ClientsPage() {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
 
   const clients = await prisma.client.findMany({
-    where: { agencyId },
+    where: { agencyId, assignedStaffId: userId },
     include: { user: true, _count: { select: { vehicles: true } } },
     orderBy: { createdAt: "desc" },
   });

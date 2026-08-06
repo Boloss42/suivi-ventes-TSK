@@ -60,7 +60,7 @@ async function savePhotos(vehicleId: string, formData: FormData) {
 }
 
 /** Crée le client (+ compte de connexion) à la volée depuis le formulaire véhicule. */
-async function createClientInline(agencyId: string, formData: FormData) {
+async function createClientInline(agencyId: string, userId: string, formData: FormData) {
   const parsed = clientSchema.safeParse({
     firstName: formData.get("newClientFirstName"),
     lastName: formData.get("newClientLastName"),
@@ -84,6 +84,7 @@ async function createClientInline(agencyId: string, formData: FormData) {
   const client = await prisma.client.create({
     data: {
       agency: { connect: { id: agencyId } },
+      assignedStaff: { connect: { id: userId } },
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
       phone: parsed.data.phone,
@@ -109,7 +110,7 @@ export async function createVehicle(
   _prevState: VehicleActionState,
   formData: FormData,
 ): Promise<VehicleActionState> {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
 
   const parsed = parseVehicleForm(formData);
   if (!parsed.success) {
@@ -129,7 +130,7 @@ export async function createVehicle(
   let newClientCredentials: { email: string; inviteUrl: string; qrSvg: string } | undefined;
 
   if (clientMode === "new") {
-    const result = await createClientInline(agencyId, formData);
+    const result = await createClientInline(agencyId, userId, formData);
     if ("error" in result) {
       return { error: result.error };
     }
@@ -140,7 +141,7 @@ export async function createVehicle(
       return { error: "Client requis." };
     }
     const client = await prisma.client.findFirst({
-      where: { id: parsed.data.clientId, agencyId },
+      where: { id: parsed.data.clientId, agencyId, assignedStaffId: userId },
     });
     if (!client) {
       return { error: "Client introuvable." };
@@ -185,10 +186,10 @@ export async function updateVehicle(
   _prevState: VehicleActionState,
   formData: FormData,
 ): Promise<VehicleActionState> {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
 
   const existingVehicle = await prisma.vehicle.findFirst({
-    where: { id: vehicleId, agencyId },
+    where: { id: vehicleId, agencyId, client: { assignedStaffId: userId } },
   });
   if (!existingVehicle) {
     return { error: "Véhicule introuvable." };
@@ -203,7 +204,7 @@ export async function updateVehicle(
     return { error: "Client requis." };
   }
   const client = await prisma.client.findFirst({
-    where: { id: parsed.data.clientId, agencyId },
+    where: { id: parsed.data.clientId, agencyId, assignedStaffId: userId },
   });
   if (!client) {
     return { error: "Client introuvable." };
@@ -244,13 +245,32 @@ export async function updateVehicle(
   redirect(`/staff/vehicles/${vehicleId}`);
 }
 
+export async function deleteVehicle(formData: FormData) {
+  const { agencyId, userId } = await requireStaff();
+  const vehicleId = formData.get("vehicleId") as string;
+
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id: vehicleId, agencyId, client: { assignedStaffId: userId } },
+    include: { photos: true },
+  });
+  if (!vehicle) return;
+
+  await prisma.vehicle.delete({ where: { id: vehicleId } });
+
+  await Promise.all(vehicle.photos.map((photo) => deleteVehiclePhotoFile(photo.url)));
+
+  revalidatePath("/staff/vehicles");
+  revalidatePath("/staff/dashboard");
+  revalidatePath(`/staff/clients/${vehicle.clientId}`);
+}
+
 export async function deletePhoto(formData: FormData) {
-  const { agencyId } = await requireStaff();
+  const { agencyId, userId } = await requireStaff();
   const photoId = formData.get("photoId") as string;
   const vehicleId = formData.get("vehicleId") as string;
 
   const photo = await prisma.photo.findFirst({
-    where: { id: photoId, vehicle: { agencyId } },
+    where: { id: photoId, vehicle: { agencyId, client: { assignedStaffId: userId } } },
   });
   if (photo) {
     await prisma.photo.delete({ where: { id: photoId } });
