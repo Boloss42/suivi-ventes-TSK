@@ -44,14 +44,19 @@ function parseVehicleForm(formData: FormData) {
 async function savePhotos(vehicleId: string, formData: FormData) {
   const files = formData.getAll("photos") as File[];
   const validFiles = files.filter((f) => f instanceof File && f.size > 0);
+  if (validFiles.length === 0) return;
 
-  for (let i = 0; i < validFiles.length; i++) {
-    const url = await saveVehiclePhoto(vehicleId, validFiles[i]);
-    const maxOrder = await prisma.photo.count({ where: { vehicleId } });
-    await prisma.photo.create({
-      data: { vehicleId, url, order: maxOrder + i },
-    });
-  }
+  // Écrit les fichiers en parallèle et ne fait que 2 requêtes DB au total
+  // (au lieu d'un count + create par photo, très coûteux en latence réseau
+  // vers une base distante comme Neon).
+  const startOrder = await prisma.photo.count({ where: { vehicleId } });
+  const urls = await Promise.all(
+    validFiles.map((file) => saveVehiclePhoto(vehicleId, file)),
+  );
+
+  await prisma.photo.createMany({
+    data: urls.map((url, i) => ({ vehicleId, url, order: startOrder + i })),
+  });
 }
 
 /** Crée le client (+ compte de connexion) à la volée depuis le formulaire véhicule. */
