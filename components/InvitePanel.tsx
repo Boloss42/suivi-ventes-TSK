@@ -5,9 +5,13 @@ import { useState } from "react";
 export default function InvitePanel({
   inviteUrl,
   qrSvg,
+  label = "Lien d'activation",
+  caption = "Valide 7 jours. À transmettre par SMS, email ou tout autre moyen — ou faire scanner le QR code ci-dessous.",
 }: {
   inviteUrl: string;
   qrSvg: string;
+  label?: string;
+  caption?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -25,9 +29,7 @@ export default function InvitePanel({
   return (
     <div className="space-y-3">
       <div>
-        <label className="mb-1 block text-xs font-medium text-ink-500">
-          Lien d&apos;activation
-        </label>
+        <label className="mb-1 block text-xs font-medium text-ink-500">{label}</label>
         <div className="flex gap-2">
           <input
             readOnly
@@ -43,10 +45,7 @@ export default function InvitePanel({
             {copied ? "Copié !" : "Copier"}
           </button>
         </div>
-        <p className="mt-1 text-xs text-ink-400">
-          Valide 7 jours. À transmettre par SMS, email ou tout autre moyen — ou faire
-          scanner le QR code ci-dessous.
-        </p>
+        <p className="mt-1 text-xs text-ink-400">{caption}</p>
       </div>
       <div
         className="flex justify-center rounded-md border border-ink-200 bg-white p-4"

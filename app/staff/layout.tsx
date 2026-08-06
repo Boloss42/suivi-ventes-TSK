@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { href: "/staff/dashboard", label: "Tableau de bord" },
   { href: "/staff/clients", label: "Clients" },
   { href: "/staff/vehicles", label: "Véhicules" },
+  { href: "/staff/reviews", label: "Avis Google" },
 ];
 
 export default async function StaffLayout({

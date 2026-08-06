@@ -6,6 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { formatDate, formatPrice, formatMileage } from "@/lib/format";
 import { formatWeekShort } from "@/lib/week";
 import StatsChart, { type ChartPoint } from "@/components/client/StatsChart";
+import HistoryTable from "@/components/client/HistoryTable";
 
 export default async function ClientVehicleDetailPage({
   params,
@@ -127,39 +128,19 @@ export default async function ClientVehicleDetailPage({
           </div>
 
           {historyDesc.length > 0 && (
-            <div className="rounded-lg border border-ink-100 bg-white p-6">
-              <h2 className="mb-4 text-sm font-semibold text-ink-800">Historique détaillé</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-ink-100 text-ink-500">
-                    <tr>
-                      <th className="py-2 pr-4 font-medium">Semaine</th>
-                      <th className="py-2 pr-4 font-medium">Vues</th>
-                      <th className="py-2 pr-4 font-medium">Contacts</th>
-                      <th className="py-2 pr-4 font-medium">Appels</th>
-                      <th className="py-2 pr-4 font-medium">Favoris</th>
-                      <th className="py-2 pr-4 font-medium">Visites</th>
-                      <th className="py-2 pr-4 font-medium">Offres</th>
-                      <th className="py-2 pr-4 font-medium">Note</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historyDesc.map((stat) => (
-                      <tr key={stat.id} className="border-b border-ink-50 last:border-0">
-                        <td className="py-2 pr-4 text-ink-800">{formatDate(stat.weekStart)}</td>
-                        <td className="py-2 pr-4 text-ink-600">{stat.views}</td>
-                        <td className="py-2 pr-4 text-ink-600">{stat.contacts}</td>
-                        <td className="py-2 pr-4 text-ink-600">{stat.calls}</td>
-                        <td className="py-2 pr-4 text-ink-600">{stat.favorites}</td>
-                        <td className="py-2 pr-4 text-ink-600">{stat.visits}</td>
-                        <td className="py-2 pr-4 text-ink-600">{stat.offers}</td>
-                        <td className="py-2 pr-4 text-ink-500">{stat.note ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <HistoryTable
+              stats={historyDesc.map((stat) => ({
+                id: stat.id,
+                weekStart: stat.weekStart.toISOString(),
+                views: stat.views,
+                contacts: stat.contacts,
+                calls: stat.calls,
+                favorites: stat.favorites,
+                visits: stat.visits,
+                offers: stat.offers,
+                note: stat.note,
+              }))}
+            />
           )}
         </div>
       </div>

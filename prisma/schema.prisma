@@ -33,15 +33,17 @@ model User {
 }
 
 model Client {
-  id            String         @id @default(cuid())
-  userId        String         @unique
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName     String
-  lastName      String
-  phone         String?
-  vehicles      Vehicle[]
-  notifications Notification[]
-  createdAt     DateTime       @default(now())
+  id                String         @id @default(cuid())
+  userId            String         @unique
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName         String
+  lastName          String
+  phone             String?
+  vehicles          Vehicle[]
+  notifications     Notification[]
+  // Dernière fois qu'un avis Google lui a été demandé (voir /staff/reviews).
+  reviewRequestedAt DateTime?
+  createdAt         DateTime       @default(now())
 }
 
 model Vehicle {
@@ -104,6 +106,12 @@ model WeeklyStat {
 
   @@unique([vehicleId, weekStart])
   @@index([vehicleId])
+}
+
+// Ligne unique de réglages globaux pour l'agence (id fixe "settings").
+model Settings {
+  id              String  @id @default("settings")
+  googleReviewUrl String?
 }
 
 model Notification {

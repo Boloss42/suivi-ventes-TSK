@@ -22,7 +22,7 @@ export default function TopNav({
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <div className="flex flex-wrap items-center gap-6">
           <Link href={homeHref} className="text-base font-semibold text-brand-500">
-            Transakauto
+            Mon suivi perso
           </Link>
           <nav className="flex flex-wrap gap-1">
             {items.map((item) => (

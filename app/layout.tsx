@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Transakauto — Suivi des ventes",
+  title: "Mon suivi perso — Suivi des ventes",
   description: "Suivi des annonces et statistiques de vente de véhicules en dépôt-vente",
 };
 

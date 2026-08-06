@@ -1,4 +1,4 @@
-# Transakauto — Suivi de vente de véhicules
+# Mon suivi perso — Suivi de vente de véhicules
 
 Application web de suivi des annonces de véhicules en dépôt-vente. Deux
 espaces distincts :
@@ -125,6 +125,7 @@ components/            Composants partagés (navigation, formulaires, graphiques
   favoris, visites, offres, note), un relevé unique par véhicule et par semaine
 - `Notification` — notification in-app envoyée à un client lorsqu'un nouveau
   relevé est saisi pour l'un de ses véhicules
+- `Settings` — ligne unique de réglages globaux (lien d'avis Google)
 
 Le schéma complet est dans [`prisma/schema.prisma`](prisma/schema.prisma).
 
@@ -192,6 +193,20 @@ comme lue automatiquement à l'ouverture du menu. Modifier un relevé existant
 ne génère pas de nouvelle notification (pour éviter le bruit lors de
 corrections). Ce système fonctionne entièrement en base de données (modèle
 `Notification`), sans service d'email à configurer.
+
+## Avis Google (`/staff/reviews`)
+
+Section staff pour solliciter des avis Google auprès des clients :
+
+1. Renseigner une fois le lien d'avis Google de l'agence (récupéré depuis la
+   fiche Google Business Profile : « Demander des avis » → copier le lien).
+2. Pour chaque client, le bouton « Demander un avis » génère un lien copiable
+   et un QR code pointant directement vers ce lien, à transmettre par SMS,
+   email ou à faire scanner. La date de la dernière demande est conservée
+   (`Client.reviewRequestedAt`) pour savoir qui a déjà été sollicité.
+
+Comme pour l'activation de compte, aucun envoi d'email n'est automatisé : le
+staff transmet le lien/QR par le moyen de son choix.
 
 ## Déploiement
 

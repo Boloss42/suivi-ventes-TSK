@@ -2,7 +2,7 @@
   "name": "transakauto",
   "version": "1.0.0",
   "private": true,
-  "description": "Application de suivi de vente de véhicules en dépôt-vente — Transakauto",
+  "description": "Application de suivi de vente de véhicules en dépôt-vente — Mon suivi perso",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

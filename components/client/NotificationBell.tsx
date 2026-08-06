@@ -77,11 +77,14 @@ export default function NotificationBell({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-80 max-w-[90vw] rounded-lg border border-ink-100 bg-white shadow-lg">
+        <div
+          className="fixed inset-x-4 top-16 z-20 rounded-lg border border-ink-100 bg-white shadow-lg
+                     sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80"
+        >
           <div className="border-b border-ink-100 px-4 py-3">
             <h3 className="text-sm font-semibold text-ink-800">Notifications</h3>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[70vh] overflow-y-auto sm:max-h-96">
             {notifications.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-ink-400">
                 Aucune notification pour le moment.
