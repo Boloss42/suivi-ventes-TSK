@@ -3,7 +3,10 @@ import NotificationBell from "@/components/client/NotificationBell";
 import { requireClient } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const NAV_ITEMS = [{ href: "/client/dashboard", label: "Mes véhicules" }];
+const NAV_ITEMS = [
+  { href: "/client/dashboard", label: "Mes véhicules" },
+  { href: "/client/reviews", label: "Avis Google" },
+];
 
 export default async function ClientLayout({
   children,
@@ -35,6 +38,7 @@ export default async function ClientLayout({
               read: n.read,
               createdAt: n.createdAt.toISOString(),
               vehicleId: n.vehicleId,
+              type: n.type,
             }))}
             unreadCount={unreadCount}
           />

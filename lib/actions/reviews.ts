@@ -23,12 +23,22 @@ export async function requestReview(
     return { error: "Configurez d'abord le lien d'avis Google ci-dessus." };
   }
 
-  await prisma.client.update({
-    where: { id: clientId },
-    data: { reviewRequestedAt: new Date() },
-  });
+  await prisma.$transaction([
+    prisma.client.update({
+      where: { id: clientId },
+      data: { reviewRequestedAt: new Date() },
+    }),
+    prisma.notification.create({
+      data: {
+        clientId,
+        type: "REVIEW",
+        message: "Le service vous invite à laisser un avis Google. Merci pour votre confiance !",
+      },
+    }),
+  ]);
 
   revalidatePath("/staff/reviews");
+  revalidatePath("/client/dashboard", "layout");
 
   const qrSvg = await generateQrSvg(settings.googleReviewUrl);
 

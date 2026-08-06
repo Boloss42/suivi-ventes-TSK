@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDate, formatPrice, formatMileage } from "@/lib/format";
 import { currentWeekStart, formatWeekLabel } from "@/lib/week";
+import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 
 export default async function VehicleDetailPage({
   params,
@@ -24,6 +25,11 @@ export default async function VehicleDetailPage({
   });
 
   if (!vehicle) notFound();
+
+  const priceProposals = await prisma.priceProposal.findMany({
+    where: { vehicleId: id },
+    orderBy: { createdAt: "desc" },
+  });
 
   const thisWeek = currentWeekStart();
   const hasThisWeekStat = vehicle.weeklyStats.some(
@@ -77,10 +83,65 @@ export default async function VehicleDetailPage({
               <Row label="Kilométrage" value={formatMileage(vehicle.mileage)} />
               <Row label="Motorisation" value={vehicle.fuelType} />
               <Row label="Référence" value={vehicle.reference} />
-              <Row label="Prix affiché" value={formatPrice(vehicle.price)} />
+              <Row label="Prix net vendeur" value={formatPrice(vehicle.price)} />
               <Row label="Mise en dépôt" value={formatDate(vehicle.depositDate)} />
             </dl>
           </div>
+
+          {priceProposals.length > 0 && (
+            <div className="rounded-lg border border-ink-100 bg-white p-6">
+              <h2 className="mb-3 text-sm font-semibold text-ink-800">
+                Propositions de prix du client
+              </h2>
+              <ul className="space-y-3">
+                {priceProposals.map((proposal) => (
+                  <li
+                    key={proposal.id}
+                    className={`rounded-md border px-3 py-2 text-sm ${
+                      proposal.status === "PENDING"
+                        ? "border-amber-200 bg-amber-50"
+                        : "border-ink-100 bg-ink-50"
+                    }`}
+                  >
+                    <p className="font-medium text-ink-900">
+                      {formatPrice(proposal.proposedPrice)}
+                      <span className="ml-2 text-xs font-normal text-ink-500">
+                        {formatDate(proposal.createdAt)}
+                      </span>
+                    </p>
+                    {proposal.message && (
+                      <p className="mt-1 text-ink-600">« {proposal.message} »</p>
+                    )}
+                    {proposal.status === "PENDING" ? (
+                      <div className="mt-2 flex gap-2">
+                        <form action={respondToPriceProposal.bind(null, proposal.id, "ACCEPTED")}>
+                          <button
+                            type="submit"
+                            className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                          >
+                            Accepter
+                          </button>
+                        </form>
+                        <form action={respondToPriceProposal.bind(null, proposal.id, "REJECTED")}>
+                          <button
+                            type="submit"
+                            className="rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:bg-white"
+                          >
+                            Refuser
+                          </button>
+                        </form>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-ink-500">
+                        {proposal.status === "ACCEPTED" ? "Acceptée" : "Refusée"}
+                        {proposal.respondedAt ? ` le ${formatDate(proposal.respondedAt)}` : ""}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {vehicle.listingUrls.length > 0 && (
             <div className="rounded-lg border border-ink-100 bg-white p-6">

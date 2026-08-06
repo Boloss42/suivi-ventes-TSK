@@ -242,7 +242,7 @@ export default function VehicleForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Prix affiché (€)</label>
+          <label className={labelClass}>Prix net vendeur (€)</label>
           <input
             name="price"
             type="number"

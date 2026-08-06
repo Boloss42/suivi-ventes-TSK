@@ -11,7 +11,8 @@ export type NotificationItem = {
   message: string;
   read: boolean;
   createdAt: string;
-  vehicleId: string;
+  vehicleId: string | null;
+  type: "STAT" | "REVIEW" | "PRICE_PROPOSAL";
 };
 
 export default function NotificationBell({
@@ -94,7 +95,7 @@ export default function NotificationBell({
                 {notifications.map((n) => (
                   <li key={n.id}>
                     <Link
-                      href={`/client/vehicles/${n.vehicleId}`}
+                      href={n.vehicleId ? `/client/vehicles/${n.vehicleId}` : "/client/reviews"}
                       onClick={() => setOpen(false)}
                       className="block px-4 py-3 text-sm transition hover:bg-ink-50"
                     >

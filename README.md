@@ -126,6 +126,8 @@ components/            Composants partagés (navigation, formulaires, graphiques
 - `Notification` — notification in-app envoyée à un client lorsqu'un nouveau
   relevé est saisi pour l'un de ses véhicules
 - `Settings` — ligne unique de réglages globaux (lien d'avis Google)
+- `PriceProposal` — proposition d'ajustement de prix soumise par un client sur
+  l'un de ses véhicules, à valider par le staff
 
 Le schéma complet est dans [`prisma/schema.prisma`](prisma/schema.prisma).
 
@@ -206,7 +208,18 @@ Section staff pour solliciter des avis Google auprès des clients :
    (`Client.reviewRequestedAt`) pour savoir qui a déjà été sollicité.
 
 Comme pour l'activation de compte, aucun envoi d'email n'est automatisé : le
-staff transmet le lien/QR par le moyen de son choix.
+staff transmet le lien/QR par le moyen de son choix. Le client retrouve ce
+lien à tout moment dans son espace, sous « Avis Google », et reçoit une
+notification in-app à chaque demande.
+
+## Propositions d'ajustement de prix
+
+Sur la fiche de chaque véhicule, le client peut proposer un nouveau prix
+(avec un message optionnel). Une seule proposition peut être en attente à la
+fois par véhicule. Côté staff, la fiche véhicule affiche les propositions
+reçues avec les boutons « Accepter » (met à jour le prix net vendeur du
+véhicule) ou « Refuser ». Dans les deux cas, le client reçoit une
+notification in-app avec la décision.
 
 ## Déploiement
 

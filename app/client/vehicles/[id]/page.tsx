@@ -7,6 +7,7 @@ import { formatDate, formatPrice, formatMileage } from "@/lib/format";
 import { formatWeekShort } from "@/lib/week";
 import StatsChart, { type ChartPoint } from "@/components/client/StatsChart";
 import HistoryTable from "@/components/client/HistoryTable";
+import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 
 export default async function ClientVehicleDetailPage({
   params,
@@ -28,6 +29,11 @@ export default async function ClientVehicleDetailPage({
   // Isolation stricte : un véhicule qui n'appartient pas au client connecté
   // n'existe tout simplement pas de son point de vue.
   if (!vehicle || vehicle.clientId !== clientId) notFound();
+
+  const latestProposalRow = await prisma.priceProposal.findFirst({
+    where: { vehicleId: id },
+    orderBy: { createdAt: "desc" },
+  });
 
   const chartData: ChartPoint[] = vehicle.weeklyStats.map((s) => ({
     week: formatWeekShort(s.weekStart),
@@ -75,10 +81,25 @@ export default async function ClientVehicleDetailPage({
             <dl className="space-y-2 text-sm">
               <Row label="Kilométrage" value={formatMileage(vehicle.mileage)} />
               <Row label="Motorisation" value={vehicle.fuelType} />
-              <Row label="Prix affiché" value={formatPrice(vehicle.price)} />
+              <Row label="Prix net vendeur" value={formatPrice(vehicle.price)} />
               <Row label="En dépôt depuis" value={formatDate(vehicle.depositDate)} />
             </dl>
           </div>
+
+          <PriceProposalPanel
+            vehicleId={vehicle.id}
+            currentPrice={vehicle.price}
+            latestProposal={
+              latestProposalRow
+                ? {
+                    proposedPrice: latestProposalRow.proposedPrice,
+                    message: latestProposalRow.message,
+                    status: latestProposalRow.status,
+                    createdAt: latestProposalRow.createdAt.toISOString(),
+                  }
+                : null
+            }
+          />
 
           {vehicle.listingUrls.length > 0 && (
             <div className="rounded-lg border border-ink-100 bg-white p-6">

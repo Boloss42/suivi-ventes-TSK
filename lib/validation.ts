@@ -46,6 +46,12 @@ export const activateSchema = z
     path: ["confirmPassword"],
   });
 
+export const priceProposalSchema = z.object({
+  vehicleId: z.string().min(1),
+  proposedPrice: z.coerce.number().int().min(1, "Prix invalide"),
+  message: z.string().optional(),
+});
+
 export const weeklyStatSchema = z.object({
   vehicleId: z.string().min(1),
   weekStart: z.string().min(1, "Semaine requise"),
