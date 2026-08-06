@@ -3,10 +3,10 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
-  regenerateStaffInviteLink,
-  deleteStaffAccount,
-  type StaffInviteLinkState,
-} from "@/lib/actions/staffAccounts";
+  regenerateAgencyStaffInviteLink,
+  deleteAgencyStaffAccount,
+  type AgencyStaffInviteLinkState,
+} from "@/lib/actions/agencies";
 import InvitePanel from "@/components/InvitePanel";
 import { formatDate } from "@/lib/format";
 
@@ -36,23 +36,23 @@ function DeleteButton() {
   );
 }
 
-export default function StaffRow({
+export default function AgencyStaffRow({
+  agencyId,
   userId,
   email,
   createdAt,
   isPending,
-  isSelf,
-  canDelete,
 }: {
+  agencyId: string;
   userId: string;
   email: string;
   createdAt: string;
   isPending: boolean;
-  isSelf: boolean;
-  canDelete: boolean;
 }) {
-  const [state, formAction] = useActionState<StaffInviteLinkState, FormData>(
-    regenerateStaffInviteLink,
+  const regenerateWithAgency = regenerateAgencyStaffInviteLink.bind(null, agencyId);
+  const deleteWithAgency = deleteAgencyStaffAccount.bind(null, agencyId);
+  const [state, formAction] = useActionState<AgencyStaffInviteLinkState, FormData>(
+    regenerateWithAgency,
     {},
   );
 
@@ -60,9 +60,7 @@ export default function StaffRow({
     <div className="py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-medium text-ink-900">
-            {email} {isSelf && <span className="text-xs font-normal text-ink-400">(vous)</span>}
-          </p>
+          <p className="font-medium text-ink-900">{email}</p>
           <p className="text-sm text-ink-500">
             {isPending ? "En attente d'activation" : "Actif"} — depuis le {formatDate(createdAt)}
           </p>
@@ -74,19 +72,17 @@ export default function StaffRow({
               <RegenerateButton />
             </form>
           )}
-          {canDelete && !isSelf && (
-            <form
-              action={deleteStaffAccount}
-              onSubmit={(e) => {
-                if (!confirm(`Supprimer le compte staff ${email} ?`)) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <input type="hidden" name="userId" value={userId} />
-              <DeleteButton />
-            </form>
-          )}
+          <form
+            action={deleteWithAgency}
+            onSubmit={(e) => {
+              if (!confirm(`Supprimer le compte agent ${email} ?`)) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <input type="hidden" name="userId" value={userId} />
+            <DeleteButton />
+          </form>
         </div>
       </div>
 

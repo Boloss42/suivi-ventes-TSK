@@ -11,14 +11,32 @@ function weeksAgo(n: number) {
   return startOfWeek(subWeeks(new Date(), n), { weekStartsOn: 1 });
 }
 
+const SUPER_ADMIN_PASSWORD = "Admin1234!";
+
 async function main() {
   // Nettoyage (ordre respectant les contraintes de clé étrangère).
+  await prisma.notification.deleteMany();
+  await prisma.priceProposal.deleteMany();
   await prisma.weeklyStat.deleteMany();
   await prisma.photo.deleteMany();
   await prisma.listingUrl.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.client.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.agency.deleteMany();
+
+  const adminPasswordHash = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10);
+  await prisma.user.create({
+    data: {
+      email: "admin@transakauto.fr",
+      passwordHash: adminPasswordHash,
+      role: "SUPER_ADMIN",
+    },
+  });
+
+  const agency = await prisma.agency.create({
+    data: { name: "Agence Démo", maxStaffAccounts: 5 },
+  });
 
   const staffPasswordHash = await bcrypt.hash(STAFF_PASSWORD, 10);
   await prisma.user.create({
@@ -26,6 +44,7 @@ async function main() {
       email: "staff@transakauto.fr",
       passwordHash: staffPasswordHash,
       role: "STAFF",
+      agencyId: agency.id,
     },
   });
 
@@ -33,6 +52,7 @@ async function main() {
 
   const martin = await prisma.client.create({
     data: {
+      agency: { connect: { id: agency.id } },
       firstName: "Martin",
       lastName: "Dupont",
       phone: "06 12 34 56 78",
@@ -40,7 +60,7 @@ async function main() {
         create: {
           email: "martin.dupont@example.com",
           passwordHash: clientPasswordHash,
-          role: "CLIENT",
+          role: "CLIENT" as const,
         },
       },
     },
@@ -48,6 +68,7 @@ async function main() {
 
   const sophie = await prisma.client.create({
     data: {
+      agency: { connect: { id: agency.id } },
       firstName: "Sophie",
       lastName: "Bernard",
       phone: "06 98 76 54 32",
@@ -55,7 +76,7 @@ async function main() {
         create: {
           email: "sophie.bernard@example.com",
           passwordHash: clientPasswordHash,
-          role: "CLIENT",
+          role: "CLIENT" as const,
         },
       },
     },
@@ -63,6 +84,7 @@ async function main() {
 
   const ahmed = await prisma.client.create({
     data: {
+      agency: { connect: { id: agency.id } },
       firstName: "Ahmed",
       lastName: "Khalil",
       phone: "07 11 22 33 44",
@@ -70,7 +92,7 @@ async function main() {
         create: {
           email: "ahmed.khalil@example.com",
           passwordHash: clientPasswordHash,
-          role: "CLIENT",
+          role: "CLIENT" as const,
         },
       },
     },
@@ -78,6 +100,7 @@ async function main() {
 
   const peugeot308 = await prisma.vehicle.create({
     data: {
+      agencyId: agency.id,
       clientId: martin.id,
       make: "Peugeot",
       model: "308",
@@ -99,6 +122,7 @@ async function main() {
 
   const clio = await prisma.vehicle.create({
     data: {
+      agencyId: agency.id,
       clientId: martin.id,
       make: "Renault",
       model: "Clio",
@@ -117,6 +141,7 @@ async function main() {
 
   const serie3 = await prisma.vehicle.create({
     data: {
+      agencyId: agency.id,
       clientId: sophie.id,
       make: "BMW",
       model: "Série 3",
@@ -135,6 +160,7 @@ async function main() {
 
   const a4 = await prisma.vehicle.create({
     data: {
+      agencyId: agency.id,
       clientId: ahmed.id,
       make: "Audi",
       model: "A4",
@@ -156,6 +182,7 @@ async function main() {
 
   const c3 = await prisma.vehicle.create({
     data: {
+      agencyId: agency.id,
       clientId: ahmed.id,
       make: "Citroën",
       model: "C3",
@@ -231,10 +258,11 @@ async function main() {
 
   console.log("Jeu de données de démonstration créé avec succès.");
   console.log("");
-  console.log("Compte staff  : staff@transakauto.fr / " + STAFF_PASSWORD);
-  console.log("Comptes client: martin.dupont@example.com / " + CLIENT_PASSWORD);
-  console.log("                sophie.bernard@example.com / " + CLIENT_PASSWORD);
-  console.log("                ahmed.khalil@example.com / " + CLIENT_PASSWORD);
+  console.log("Compte super-admin : admin@transakauto.fr / " + SUPER_ADMIN_PASSWORD);
+  console.log("Compte staff       : staff@transakauto.fr / " + STAFF_PASSWORD);
+  console.log("Comptes client     : martin.dupont@example.com / " + CLIENT_PASSWORD);
+  console.log("                     sophie.bernard@example.com / " + CLIENT_PASSWORD);
+  console.log("                     ahmed.khalil@example.com / " + CLIENT_PASSWORD);
 }
 
 main()

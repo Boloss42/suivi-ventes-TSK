@@ -1,10 +1,19 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
-/** À utiliser dans les pages/actions de l'espace staff : vérifie le rôle en plus du middleware. */
+/** À utiliser dans les pages/actions de l'espace staff : vérifie le rôle + renvoie l'agencyId. */
 export async function requireStaff() {
   const session = await auth();
   if (!session?.user || session.user.role !== "STAFF") {
+    redirect("/login");
+  }
+  return { session, agencyId: session.user.agencyId as string };
+}
+
+/** À utiliser dans les pages/actions de l'espace admin : vérifie le rôle super-admin. */
+export async function requireSuperAdmin() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
     redirect("/login");
   }
   return session;

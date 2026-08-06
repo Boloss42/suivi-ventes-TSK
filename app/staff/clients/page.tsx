@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 
 export default async function ClientsPage() {
+  const { agencyId } = await requireStaff();
+
   const clients = await prisma.client.findMany({
+    where: { agencyId },
     include: { user: true, _count: { select: { vehicles: true } } },
     orderBy: { createdAt: "desc" },
   });

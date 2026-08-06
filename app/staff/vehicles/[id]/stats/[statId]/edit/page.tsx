@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import StatForm from "@/components/StatForm";
 import { updateWeeklyStat } from "@/lib/actions/stats";
 
@@ -8,10 +9,11 @@ export default async function EditStatPage({
 }: {
   params: Promise<{ id: string; statId: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { id, statId } = await params;
 
   const [vehicle, stat] = await Promise.all([
-    prisma.vehicle.findUnique({ where: { id } }),
+    prisma.vehicle.findFirst({ where: { id, agencyId } }),
     prisma.weeklyStat.findUnique({ where: { id: statId } }),
   ]);
 

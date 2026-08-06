@@ -1,11 +1,14 @@
 # Mon suivi perso — Suivi de vente de véhicules
 
-Application web de suivi des annonces de véhicules en dépôt-vente. Deux
-espaces distincts :
+Application web multi-agences de suivi des annonces de véhicules en
+dépôt-vente, destinée à être proposée en abonnement à un réseau d'agences
+(franchise). Trois espaces distincts :
 
-- **Espace personnel (staff)** : gestion des clients, des véhicules et
-  saisie hebdomadaire des statistiques d'annonce.
-- **Espace client** : consultation en lecture seule de ses propres
+- **Espace admin** (`SUPER_ADMIN`) : création des agences et gestion de leur
+  quota de comptes agents (abonnements).
+- **Espace personnel (staff, `STAFF`)** : gestion des clients, des véhicules
+  et saisie hebdomadaire des statistiques d'annonce — cloisonné par agence.
+- **Espace client** (`CLIENT`) : consultation en lecture seule de ses propres
   véhicules et de l'évolution de leurs statistiques (graphiques + historique).
 
 ## Stack technique
@@ -13,7 +16,7 @@ espaces distincts :
 - [Next.js 15](https://nextjs.org/) (App Router) + TypeScript
 - [Tailwind CSS 4](https://tailwindcss.com/)
 - [Prisma ORM](https://www.prisma.io/) — PostgreSQL (dev et prod, ex. [Neon](https://neon.tech) ou [Supabase](https://supabase.com) en free tier)
-- [Auth.js / NextAuth v5](https://authjs.dev/) — authentification par email + mot de passe, avec rôles (`STAFF` / `CLIENT`)
+- [Auth.js / NextAuth v5](https://authjs.dev/) — authentification par email + mot de passe, avec rôles (`SUPER_ADMIN` / `STAFF` / `CLIENT`)
 - [Recharts](https://recharts.org/) — graphiques d'évolution côté client
 - [Zod](https://zod.dev/) — validation des formulaires
 
@@ -71,23 +74,30 @@ L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 
 ## Identifiants de test
 
-| Rôle   | Email                       | Mot de passe   |
-|--------|------------------------------|----------------|
-| Staff  | `staff@transakauto.fr`       | `Staff1234!`   |
-| Client | `martin.dupont@example.com`  | `Client1234!`  |
-| Client | `sophie.bernard@example.com` | `Client1234!`  |
-| Client | `ahmed.khalil@example.com`   | `Client1234!`  |
+| Rôle        | Email                        | Mot de passe   |
+|-------------|-------------------------------|----------------|
+| Super-admin | `admin@transakauto.fr`       | `Admin1234!`   |
+| Staff       | `staff@transakauto.fr`       | `Staff1234!`   |
+| Client      | `martin.dupont@example.com`  | `Client1234!`  |
+| Client      | `sophie.bernard@example.com` | `Client1234!`  |
+| Client      | `ahmed.khalil@example.com`   | `Client1234!`  |
 
-Ces comptes sont créés par `prisma/seed.ts`. Le compte staff a accès à tout ;
-chaque compte client ne voit que ses propres véhicules (isolation vérifiée
-à la fois par le middleware de routage et par un filtrage explicite en base
-de données sur chaque requête).
+Ces comptes sont créés par `prisma/seed.ts` (le compte staff et les 3 clients
+appartiennent à la même agence de démo, « Agence Démo »). Le compte
+super-admin gère les agences et leurs quotas, sans accès aux données clients
+d'aucune agence ; un compte staff ne voit que les clients/véhicules de sa
+propre agence ; chaque compte client ne voit que ses propres véhicules.
+Cette isolation est vérifiée à la fois par le middleware de routage et par un
+filtrage explicite (`agencyId`/`clientId`) en base de données sur chaque
+requête.
 
 ## Organisation du code
 
 ```
 app/
-  login/               Page de connexion (commune staff/client)
+  login/               Page de connexion (commune admin/staff/client)
+  admin/               Espace super-admin (protégé, rôle SUPER_ADMIN)
+    agencies/           Liste, création, fiche agence (quota, comptes agents)
   staff/               Espace personnel (protégé par le middleware, rôle STAFF)
     dashboard/         Tableau de bord (KPIs, relevés manquants de la semaine)
     clients/           Liste, création, fiche détaillée des clients
@@ -101,9 +111,9 @@ auth.ts, auth.config.ts, middleware.ts   Configuration de l'authentification
                                           et protection des routes par rôle
 
 lib/
-  actions/             Server Actions (mutations : clients, véhicules, relevés)
+  actions/             Server Actions (mutations : agences, clients, véhicules, relevés)
   prisma.ts            Client Prisma singleton
-  session.ts           Helpers requireStaff() / requireClient()
+  session.ts           Helpers requireSuperAdmin() / requireStaff() / requireClient()
   validation.ts         Schémas Zod
   storage.ts            Stockage des photos uploadées
 
@@ -116,20 +126,36 @@ components/            Composants partagés (navigation, formulaires, graphiques
 
 ## Modèle de données
 
-- `User` — compte de connexion (email, mot de passe hashé, rôle)
-- `Client` — coordonnées d'un client, rattaché à un `User`
-- `Vehicle` — véhicule en dépôt-vente, rattaché à un `Client`
+- `Agency` — une agence de la franchise (nom, quota de comptes agents
+  `maxStaffAccounts`, lien d'avis Google)
+- `User` — compte de connexion (email, mot de passe hashé, rôle). Rattaché à
+  une `Agency` pour un `STAFF` ; jamais pour un `SUPER_ADMIN` ou un `CLIENT`
+- `Client` — coordonnées d'un client, rattaché à un `User` et à une `Agency`
+- `Vehicle` — véhicule en dépôt-vente, rattaché à un `Client` (et, de façon
+  dénormalisée, à la même `Agency` que ce client — évite une jointure sur
+  chaque requête de l'espace staff)
 - `ListingUrl` — lien(s) vers l'annonce (LeBonCoin, La Centrale, AutoScout24…)
 - `Photo` — photo(s) du véhicule
 - `WeeklyStat` — relevé hebdomadaire de statistiques (vues, contacts, appels,
   favoris, visites, offres, note), un relevé unique par véhicule et par semaine
-- `Notification` — notification in-app envoyée à un client lorsqu'un nouveau
-  relevé est saisi pour l'un de ses véhicules
-- `Settings` — ligne unique de réglages globaux (lien d'avis Google)
+- `Notification` — notification in-app envoyée à un client (nouveau relevé,
+  demande d'avis, réponse à une proposition de prix)
 - `PriceProposal` — proposition d'ajustement de prix soumise par un client sur
   l'un de ses véhicules, à valider par le staff
 
 Le schéma complet est dans [`prisma/schema.prisma`](prisma/schema.prisma).
+
+### Cloisonnement par agence
+
+Un agent (`STAFF`) ne voit que les données de sa propre agence : chaque
+requête de l'espace staff filtre explicitement par `agencyId` (obtenu via
+`requireStaff()` dans [`lib/session.ts`](lib/session.ts)), et chaque
+récupération par identifiant (fiche client, fiche véhicule, relevé...)
+vérifie la propriété avant de renvoyer quoi que ce soit — même principe que
+l'isolation déjà en place côté client (`clientId`). Le super-admin gère les
+agences et leurs comptes agents, mais ne consulte jamais directement les
+clients/véhicules d'une agence (uniquement des compteurs agrégés sur
+`/admin/agencies/[id]`).
 
 ### Ajouter un nouvel indicateur de statistique
 
@@ -185,17 +211,26 @@ définition du mot de passe, connexion automatique).
 > volontairement un mot de passe fixe et connu (voir tableau ci-dessus) pour
 > pouvoir tester l'application immédiatement, sans passer par ce flux.
 
-## Gestion de l'équipe (`/staff/team`)
+## Gestion des agences (`/admin/agencies`)
 
-N'importe quel compte staff peut créer un nouveau compte staff depuis
-« Équipe » : il suffit de renseigner l'email du collègue. Comme pour un
-client, aucun mot de passe n'est généré en clair : un lien
-d'activation/QR code est proposé, à transmettre au collègue pour qu'il
-choisisse lui-même son mot de passe (même mécanisme que
-[l'activation du compte client](#activation-du-compte-client)). Un compte
-staff a accès à l'ensemble des clients et véhicules, sans restriction. La
-suppression d'un compte staff est possible depuis cette page, sauf pour son
-propre compte ou s'il ne reste qu'un seul compte staff.
+Réservé au rôle `SUPER_ADMIN` : les agents commerciaux ne peuvent pas créer
+leur propre compte, seul le super-admin le fait, dans la limite du quota
+qu'il a fixé pour chaque agence (le nombre d'abonnements vendus).
+
+1. Créer une agence (nom + quota de comptes agents).
+2. Depuis la fiche de l'agence, créer un compte agent en renseignant son
+   email : comme pour un client, aucun mot de passe n'est généré en clair, un
+   lien d'activation/QR code est proposé (même mécanisme que
+   [l'activation du compte client](#activation-du-compte-client)). La
+   création est refusée côté serveur si le quota de l'agence est déjà atteint.
+3. Le quota est modifiable à tout moment depuis la fiche de l'agence ; les
+   comptes agents peuvent y être supprimés ou leur lien d'activation régénéré
+   (lien perdu ou expiré, valable 7 jours).
+
+La fiche agence n'affiche que des compteurs agrégés (nombre de comptes
+agents/quota, nombre de clients/véhicules) — jamais le détail des clients ou
+véhicules d'une agence, pour préserver le cloisonnement des données entre
+agences même vis-à-vis du super-admin.
 
 ## Notifications client
 

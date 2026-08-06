@@ -20,8 +20,13 @@ export const authConfig = {
       const role = auth?.user?.role;
       const { pathname } = nextUrl;
 
+      const isAdminArea = pathname.startsWith("/admin");
       const isStaffArea = pathname.startsWith("/staff");
       const isClientArea = pathname.startsWith("/client");
+
+      if (isAdminArea) {
+        return isLoggedIn && role === "SUPER_ADMIN";
+      }
 
       if (isStaffArea) {
         return isLoggedIn && role === "STAFF";
@@ -35,12 +40,13 @@ export const authConfig = {
     },
     // Ces callbacks ne dépendent ni de Prisma ni de bcrypt : ils doivent être
     // partagés avec le middleware (edge), sinon le token décodé côté edge n'a
-    // pas les champs role/clientId et authorized() ci-dessus échoue toujours
-    // -> boucle de redirection /login <-> /.
+    // pas les champs role/clientId/agencyId et authorized() ci-dessus échoue
+    // toujours -> boucle de redirection /login <-> /.
     jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.clientId = user.clientId;
+        token.agencyId = user.agencyId;
       }
       return token;
     },
@@ -48,6 +54,7 @@ export const authConfig = {
       session.user.id = token.sub!;
       session.user.role = token.role;
       session.user.clientId = token.clientId;
+      session.user.agencyId = token.agencyId;
       return session;
     },
   },

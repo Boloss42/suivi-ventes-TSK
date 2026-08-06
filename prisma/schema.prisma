@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   STAFF
   CLIENT
+  SUPER_ADMIN
 }
 
 enum VehicleStatus {
@@ -29,13 +30,36 @@ model User {
   inviteToken          String?   @unique
   inviteTokenExpiresAt DateTime?
   client               Client?
+  // Non défini pour SUPER_ADMIN et CLIENT ; obligatoire en pratique pour STAFF
+  // (validé côté application, comme clientId ci-dessus).
+  agencyId             String?
+  agency               Agency?   @relation(fields: [agencyId], references: [id])
   createdAt            DateTime  @default(now())
+
+  @@index([agencyId])
+}
+
+// Une agence de la franchise. Le super-admin fixe combien de comptes agents
+// (STAFF) elle peut avoir ; les agents ne voient jamais les données d'une
+// autre agence.
+model Agency {
+  id               String   @id @default(cuid())
+  name             String
+  maxStaffAccounts Int      @default(1)
+  googleReviewUrl  String?
+  createdAt        DateTime @default(now())
+
+  staff    User[]
+  clients  Client[]
+  vehicles Vehicle[]
 }
 
 model Client {
   id                String          @id @default(cuid())
   userId            String          @unique
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agencyId          String
+  agency            Agency          @relation(fields: [agencyId], references: [id])
   firstName         String
   lastName          String
   phone             String?
@@ -45,18 +69,26 @@ model Client {
   // Dernière fois qu'un avis Google lui a été demandé (voir /staff/reviews).
   reviewRequestedAt DateTime?
   createdAt         DateTime        @default(now())
+
+  @@index([agencyId])
 }
 
 model Vehicle {
   id             String          @id @default(cuid())
   clientId       String
   client         Client          @relation(fields: [clientId], references: [id])
+  // Dénormalisé depuis Client.agencyId pour éviter une jointure sur chaque
+  // requête de l'espace staff.
+  agencyId       String
+  agency         Agency          @relation(fields: [agencyId], references: [id])
   make           String
   model          String
   year           Int
   mileage        Int
   fuelType       String
-  reference      String          @unique
+  // Unique par agence, pas globalement : deux agences indépendantes peuvent
+  // légitimement réutiliser une même référence interne.
+  reference      String
   price          Int
   status         VehicleStatus   @default(EN_VENTE)
   depositDate    DateTime
@@ -68,7 +100,9 @@ model Vehicle {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
+  @@unique([agencyId, reference])
   @@index([clientId])
+  @@index([agencyId])
 }
 
 model ListingUrl {
@@ -108,12 +142,6 @@ model WeeklyStat {
 
   @@unique([vehicleId, weekStart])
   @@index([vehicleId])
-}
-
-// Ligne unique de réglages globaux pour l'agence (id fixe "settings").
-model Settings {
-  id              String  @id @default("settings")
-  googleReviewUrl String?
 }
 
 enum NotificationType {

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import StatForm from "@/components/StatForm";
 import { createWeeklyStat } from "@/lib/actions/stats";
 import { currentWeekStart } from "@/lib/week";
@@ -9,8 +10,9 @@ export default async function NewStatPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { id } = await params;
-  const vehicle = await prisma.vehicle.findUnique({ where: { id } });
+  const vehicle = await prisma.vehicle.findFirst({ where: { id, agencyId } });
   if (!vehicle) notFound();
 
   return (

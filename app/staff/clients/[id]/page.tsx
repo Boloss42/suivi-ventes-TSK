@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
 import EditClientForm from "./EditClientForm";
@@ -11,10 +12,11 @@ export default async function ClientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { id } = await params;
 
-  const client = await prisma.client.findUnique({
-    where: { id },
+  const client = await prisma.client.findFirst({
+    where: { id, agencyId },
     include: { user: true, vehicles: { orderBy: { createdAt: "desc" } } },
   });
 

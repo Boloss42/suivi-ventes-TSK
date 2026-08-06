@@ -5,15 +5,12 @@ import { formatDate } from "@/lib/format";
 export default async function ClientReviewsPage() {
   const { clientId } = await requireClient();
 
-  const [settings, client] = await Promise.all([
-    prisma.settings.findUnique({ where: { id: "settings" } }),
-    prisma.client.findUnique({
-      where: { id: clientId },
-      select: { reviewRequestedAt: true },
-    }),
-  ]);
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    select: { reviewRequestedAt: true, agency: { select: { googleReviewUrl: true } } },
+  });
 
-  const reviewUrl = settings?.googleReviewUrl;
+  const reviewUrl = client?.agency.googleReviewUrl;
 
   return (
     <div>

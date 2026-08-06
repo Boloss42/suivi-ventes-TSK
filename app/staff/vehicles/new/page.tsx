@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import VehicleForm from "@/components/VehicleForm";
 import { createVehicle } from "@/lib/actions/vehicles";
 
@@ -7,8 +8,10 @@ export default async function NewVehiclePage({
 }: {
   searchParams: Promise<{ clientId?: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { clientId } = await searchParams;
   const clients = await prisma.client.findMany({
+    where: { agencyId },
     orderBy: { lastName: "asc" },
     select: { id: true, firstName: true, lastName: true },
   });

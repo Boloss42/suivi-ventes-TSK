@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleThumbnail from "@/components/VehicleThumbnail";
 import { formatPrice, formatMileage, vehicleStatusLabels } from "@/lib/format";
@@ -9,10 +10,14 @@ export default async function VehiclesPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { status } = await searchParams;
 
   const vehicles = await prisma.vehicle.findMany({
-    where: status ? { status: status as "EN_VENTE" | "VENDU" | "RETIRE" } : undefined,
+    where: {
+      agencyId,
+      ...(status ? { status: status as "EN_VENTE" | "VENDU" | "RETIRE" } : {}),
+    },
     include: { client: true, photos: { orderBy: { order: "asc" }, take: 1 } },
     orderBy: { createdAt: "desc" },
   });

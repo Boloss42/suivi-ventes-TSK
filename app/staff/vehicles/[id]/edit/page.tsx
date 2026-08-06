@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import VehicleForm from "@/components/VehicleForm";
 import { updateVehicle } from "@/lib/actions/vehicles";
 
@@ -8,14 +9,16 @@ export default async function EditVehiclePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { id } = await params;
 
   const [vehicle, clients] = await Promise.all([
-    prisma.vehicle.findUnique({
-      where: { id },
+    prisma.vehicle.findFirst({
+      where: { id, agencyId },
       include: { listingUrls: true, photos: { orderBy: { order: "asc" } } },
     }),
     prisma.client.findMany({
+      where: { agencyId },
       orderBy: { lastName: "asc" },
       select: { id: true, firstName: true, lastName: true },
     }),

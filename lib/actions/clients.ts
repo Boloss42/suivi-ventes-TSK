@@ -22,7 +22,7 @@ export async function createClient(
   _prevState: ClientActionState,
   formData: FormData,
 ): Promise<ClientActionState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
 
   const parsed = clientSchema.safeParse({
     firstName: formData.get("firstName"),
@@ -49,6 +49,7 @@ export async function createClient(
 
   const client = await prisma.client.create({
     data: {
+      agency: { connect: { id: agencyId } },
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
       phone: parsed.data.phone,
@@ -56,7 +57,7 @@ export async function createClient(
         create: {
           email,
           passwordHash: placeholderHash,
-          role: "CLIENT",
+          role: "CLIENT" as const,
           inviteToken,
           inviteTokenExpiresAt: inviteExpiresAt(),
         },
@@ -81,7 +82,7 @@ export async function updateClient(
   _prevState: UpdateClientState,
   formData: FormData,
 ): Promise<UpdateClientState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
 
   const parsed = clientSchema.safeParse({
     firstName: formData.get("firstName"),
@@ -95,7 +96,7 @@ export async function updateClient(
   }
 
   const email = parsed.data.email.toLowerCase();
-  const client = await prisma.client.findUnique({ where: { id: clientId } });
+  const client = await prisma.client.findFirst({ where: { id: clientId, agencyId } });
   if (!client) {
     return { error: "Client introuvable." };
   }
@@ -133,10 +134,10 @@ export async function regenerateInviteLink(
   _prevState: InviteLinkState,
   formData: FormData,
 ): Promise<InviteLinkState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
   const clientId = formData.get("clientId") as string;
 
-  const client = await prisma.client.findUnique({ where: { id: clientId } });
+  const client = await prisma.client.findFirst({ where: { id: clientId, agencyId } });
   if (!client) {
     return { error: "Client introuvable." };
   }
@@ -157,8 +158,11 @@ export async function regenerateInviteLink(
 }
 
 export async function deleteClient(formData: FormData) {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
   const clientId = formData.get("clientId") as string;
+
+  const client = await prisma.client.findFirst({ where: { id: clientId, agencyId } });
+  if (!client) return;
 
   const vehicleCount = await prisma.vehicle.count({ where: { clientId } });
   if (vehicleCount > 0) {
@@ -166,9 +170,6 @@ export async function deleteClient(formData: FormData) {
       "Impossible de supprimer un client ayant des véhicules associés.",
     );
   }
-
-  const client = await prisma.client.findUnique({ where: { id: clientId } });
-  if (!client) return;
 
   await prisma.user.delete({ where: { id: client.userId } });
 

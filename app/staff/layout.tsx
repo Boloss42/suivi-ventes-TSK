@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { href: "/staff/clients", label: "Clients" },
   { href: "/staff/vehicles", label: "Véhicules" },
   { href: "/staff/reviews", label: "Avis Google" },
-  { href: "/staff/team", label: "Équipe" },
 ];
 
 export default async function StaffLayout({
@@ -14,7 +13,7 @@ export default async function StaffLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await requireStaff();
+  const { session } = await requireStaff();
 
   return (
     <div className="min-h-screen bg-ink-50">

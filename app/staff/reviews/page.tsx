@@ -1,14 +1,17 @@
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import SettingsForm from "./SettingsForm";
 import ClientReviewRow from "./ClientReviewRow";
 
 export default async function ReviewsPage() {
-  const [settings, clients] = await Promise.all([
-    prisma.settings.findUnique({ where: { id: "settings" } }),
-    prisma.client.findMany({ orderBy: { lastName: "asc" } }),
+  const { agencyId } = await requireStaff();
+
+  const [agency, clients] = await Promise.all([
+    prisma.agency.findUnique({ where: { id: agencyId } }),
+    prisma.client.findMany({ where: { agencyId }, orderBy: { lastName: "asc" } }),
   ]);
 
-  const hasReviewUrl = !!settings?.googleReviewUrl;
+  const hasReviewUrl = !!agency?.googleReviewUrl;
 
   return (
     <div>
@@ -22,7 +25,7 @@ export default async function ReviewsPage() {
           À récupérer une seule fois depuis votre fiche Google Business Profile
           (« Demander des avis » → copier le lien), puis à laisser tel quel ici.
         </p>
-        <SettingsForm currentUrl={settings?.googleReviewUrl ?? ""} />
+        <SettingsForm currentUrl={agency?.googleReviewUrl ?? ""} />
       </div>
 
       <div className="rounded-lg border border-ink-100 bg-white p-6">

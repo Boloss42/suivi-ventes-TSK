@@ -8,6 +8,10 @@ export default async function HomePage() {
     redirect("/login");
   }
 
+  if (session.user.role === "SUPER_ADMIN") {
+    redirect("/admin/agencies");
+  }
+
   if (session.user.role === "STAFF") {
     redirect("/staff/dashboard");
   }

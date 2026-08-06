@@ -28,15 +28,15 @@ export async function createWeeklyStat(
   _prevState: StatActionState,
   formData: FormData,
 ): Promise<StatActionState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
 
   const parsed = parseStatForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
   }
 
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: parsed.data.vehicleId },
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id: parsed.data.vehicleId, agencyId },
     select: { clientId: true, make: true, model: true },
   });
   if (!vehicle) {
@@ -90,7 +90,14 @@ export async function updateWeeklyStat(
   _prevState: StatActionState,
   formData: FormData,
 ): Promise<StatActionState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
+
+  const existingStat = await prisma.weeklyStat.findFirst({
+    where: { id: statId, vehicle: { agencyId } },
+  });
+  if (!existingStat) {
+    return { error: "Relevé introuvable." };
+  }
 
   const parsed = parseStatForm(formData);
   if (!parsed.success) {

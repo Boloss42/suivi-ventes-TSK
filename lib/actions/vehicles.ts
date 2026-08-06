@@ -60,7 +60,7 @@ async function savePhotos(vehicleId: string, formData: FormData) {
 }
 
 /** Crée le client (+ compte de connexion) à la volée depuis le formulaire véhicule. */
-async function createClientInline(formData: FormData) {
+async function createClientInline(agencyId: string, formData: FormData) {
   const parsed = clientSchema.safeParse({
     firstName: formData.get("newClientFirstName"),
     lastName: formData.get("newClientLastName"),
@@ -83,6 +83,7 @@ async function createClientInline(formData: FormData) {
 
   const client = await prisma.client.create({
     data: {
+      agency: { connect: { id: agencyId } },
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
       phone: parsed.data.phone,
@@ -90,7 +91,7 @@ async function createClientInline(formData: FormData) {
         create: {
           email,
           passwordHash: placeholderHash,
-          role: "CLIENT",
+          role: "CLIENT" as const,
           inviteToken,
           inviteTokenExpiresAt: inviteExpiresAt(),
         },
@@ -108,7 +109,7 @@ export async function createVehicle(
   _prevState: VehicleActionState,
   formData: FormData,
 ): Promise<VehicleActionState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
 
   const parsed = parseVehicleForm(formData);
   if (!parsed.success) {
@@ -116,7 +117,7 @@ export async function createVehicle(
   }
 
   const existingRef = await prisma.vehicle.findUnique({
-    where: { reference: parsed.data.reference },
+    where: { agencyId_reference: { agencyId, reference: parsed.data.reference } },
   });
   if (existingRef) {
     return { error: "Cette immatriculation / référence est déjà utilisée." };
@@ -128,7 +129,7 @@ export async function createVehicle(
   let newClientCredentials: { email: string; inviteUrl: string; qrSvg: string } | undefined;
 
   if (clientMode === "new") {
-    const result = await createClientInline(formData);
+    const result = await createClientInline(agencyId, formData);
     if ("error" in result) {
       return { error: result.error };
     }
@@ -138,11 +139,18 @@ export async function createVehicle(
     if (!parsed.data.clientId) {
       return { error: "Client requis." };
     }
-    clientId = parsed.data.clientId;
+    const client = await prisma.client.findFirst({
+      where: { id: parsed.data.clientId, agencyId },
+    });
+    if (!client) {
+      return { error: "Client introuvable." };
+    }
+    clientId = client.id;
   }
 
   const vehicle = await prisma.vehicle.create({
     data: {
+      agencyId,
       clientId,
       make: parsed.data.make,
       model: parsed.data.model,
@@ -177,7 +185,14 @@ export async function updateVehicle(
   _prevState: VehicleActionState,
   formData: FormData,
 ): Promise<VehicleActionState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
+
+  const existingVehicle = await prisma.vehicle.findFirst({
+    where: { id: vehicleId, agencyId },
+  });
+  if (!existingVehicle) {
+    return { error: "Véhicule introuvable." };
+  }
 
   const parsed = parseVehicleForm(formData);
   if (!parsed.success) {
@@ -187,10 +202,16 @@ export async function updateVehicle(
   if (!parsed.data.clientId) {
     return { error: "Client requis." };
   }
-  const clientId = parsed.data.clientId;
+  const client = await prisma.client.findFirst({
+    where: { id: parsed.data.clientId, agencyId },
+  });
+  if (!client) {
+    return { error: "Client introuvable." };
+  }
+  const clientId = client.id;
 
   const existingRef = await prisma.vehicle.findUnique({
-    where: { reference: parsed.data.reference },
+    where: { agencyId_reference: { agencyId, reference: parsed.data.reference } },
   });
   if (existingRef && existingRef.id !== vehicleId) {
     return { error: "Cette immatriculation / référence est déjà utilisée." };
@@ -224,11 +245,13 @@ export async function updateVehicle(
 }
 
 export async function deletePhoto(formData: FormData) {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
   const photoId = formData.get("photoId") as string;
   const vehicleId = formData.get("vehicleId") as string;
 
-  const photo = await prisma.photo.findUnique({ where: { id: photoId } });
+  const photo = await prisma.photo.findFirst({
+    where: { id: photoId, vehicle: { agencyId } },
+  });
   if (photo) {
     await prisma.photo.delete({ where: { id: photoId } });
     await deleteVehiclePhotoFile(photo.url);

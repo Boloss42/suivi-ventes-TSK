@@ -15,11 +15,16 @@ export async function requestReview(
   _prevState: RequestReviewState,
   formData: FormData,
 ): Promise<RequestReviewState> {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
   const clientId = formData.get("clientId") as string;
 
-  const settings = await prisma.settings.findUnique({ where: { id: "settings" } });
-  if (!settings?.googleReviewUrl) {
+  const client = await prisma.client.findFirst({ where: { id: clientId, agencyId } });
+  if (!client) {
+    return { error: "Client introuvable." };
+  }
+
+  const agency = await prisma.agency.findUnique({ where: { id: agencyId } });
+  if (!agency?.googleReviewUrl) {
     return { error: "Configurez d'abord le lien d'avis Google ci-dessus." };
   }
 
@@ -40,7 +45,7 @@ export async function requestReview(
   revalidatePath("/staff/reviews");
   revalidatePath("/client/dashboard", "layout");
 
-  const qrSvg = await generateQrSvg(settings.googleReviewUrl);
+  const qrSvg = await generateQrSvg(agency.googleReviewUrl);
 
-  return { reviewUrl: settings.googleReviewUrl, qrSvg };
+  return { reviewUrl: agency.googleReviewUrl, qrSvg };
 }

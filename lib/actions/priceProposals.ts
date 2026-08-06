@@ -57,10 +57,10 @@ export async function respondToPriceProposal(
   proposalId: string,
   decision: "ACCEPTED" | "REJECTED",
 ) {
-  await requireStaff();
+  const { agencyId } = await requireStaff();
 
-  const proposal = await prisma.priceProposal.findUnique({
-    where: { id: proposalId },
+  const proposal = await prisma.priceProposal.findFirst({
+    where: { id: proposalId, vehicle: { agencyId } },
     include: { vehicle: { select: { id: true, make: true, model: true } } },
   });
   if (!proposal || proposal.status !== "PENDING") return;

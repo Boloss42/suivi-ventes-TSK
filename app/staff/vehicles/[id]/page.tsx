@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDate, formatPrice, formatMileage } from "@/lib/format";
 import { currentWeekStart, formatWeekLabel } from "@/lib/week";
@@ -12,10 +13,11 @@ export default async function VehicleDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { agencyId } = await requireStaff();
   const { id } = await params;
 
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id },
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id, agencyId },
     include: {
       client: true,
       photos: { orderBy: { order: "asc" } },
