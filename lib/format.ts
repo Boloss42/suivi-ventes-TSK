@@ -49,3 +49,14 @@ export const vehicleStatusStyles: Record<string, string> = {
   VENDU: "bg-blue-50 text-blue-700 border-blue-200",
   RETIRE: "bg-gray-100 text-gray-600 border-gray-200",
 };
+
+// Statut d'un client déduit de son parc : « Actif » s'il a encore au moins un
+// véhicule en vente, « Inactif » sinon (aucun véhicule, ou tous vendus/retirés).
+// Toujours calculé à la volée — jamais stocké — pour rester exact sans
+// synchronisation à chaque changement de statut d'un véhicule.
+export const clientStatusLabels = { ACTIF: "Actif", INACTIF: "Inactif" } as const;
+
+export const clientStatusStyles = {
+  ACTIF: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  INACTIF: "bg-gray-100 text-gray-600 border-gray-200",
+} as const;

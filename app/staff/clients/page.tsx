@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import SearchField from "@/components/SearchField";
+import ClientStatusBadge from "@/components/ClientStatusBadge";
 
 export default async function ClientsPage({
   searchParams,
@@ -26,7 +27,18 @@ export default async function ClientsPage({
           }
         : {}),
     },
-    include: { user: true, _count: { select: { vehicles: true } } },
+    include: {
+      user: true,
+      _count: {
+        select: {
+          vehicles: true,
+          // Véhicules encore en vente : détermine le statut Actif / Inactif.
+          // (comptage filtré Prisma — > 0 ⇒ client actif)
+        },
+      },
+      // Un seul véhicule en vente suffit à rendre le client « Actif ».
+      vehicles: { where: { status: "EN_VENTE" }, select: { id: true }, take: 1 },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -54,6 +66,7 @@ export default async function ClientsPage({
               <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Téléphone</th>
               <th className="px-4 py-3 font-medium">Véhicules</th>
+              <th className="px-4 py-3 font-medium">Statut</th>
             </tr>
           </thead>
           <tbody>
@@ -75,11 +88,14 @@ export default async function ClientsPage({
                 <td className="px-4 py-3 text-ink-600">
                   {client._count.vehicles}
                 </td>
+                <td className="px-4 py-3">
+                  <ClientStatusBadge active={client.vehicles.length > 0} />
+                </td>
               </tr>
             ))}
             {clients.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-ink-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-ink-400">
                   {q ? "Aucun client ne correspond à cette recherche." : "Aucun client pour le moment."}
                 </td>
               </tr>

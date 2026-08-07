@@ -1,11 +1,14 @@
 // Moteur de diagnostic unifié : à partir des relevés hebdomadaires d'un
-// véhicule, produit un indice de vendabilité (0-100), un verdict en langage
-// naturel et une incitation éventuelle à baisser le prix.
+// véhicule ET de l'écart entre son prix net vendeur et le prix conseillé,
+// produit un indice de vendabilité (0-100), un verdict en langage naturel et
+// une incitation éventuelle à baisser le prix.
 //
-// Principe directeur : le prix est le levier n°1. Tout signal négatif (peu de
-// visibilité, beaucoup de vues sans contact, contacts sans visite, ancienneté
-// sans traction) conclut sur un tarif trop élevé. Seules les offres et les
-// visites donnent un verdict positif.
+// Principe directeur : le prix est le levier n°1. L'indice combine deux
+// facteurs : la traction statistique (vues, contacts, visites, offres) et un
+// coefficient de prix qui pénalise l'indice à mesure que le tarif dépasse le
+// prix conseillé. Tout signal négatif (peu de visibilité, beaucoup de vues sans
+// contact, contacts sans visite, ancienneté sans traction) conclut sur un tarif
+// trop élevé ; seules les offres et les visites donnent un verdict positif.
 
 export type StatSnapshot = {
   views: number;
@@ -36,6 +39,11 @@ const THRESHOLDS = {
 
 const WEIGHTS = { offers: 45, visits: 18, calls: 7, contacts: 4, viewsCap: 120, viewsFactor: 0.15 };
 
+// Coefficient de prix : 1 tant que le tarif est au niveau (ou en dessous) du
+// prix conseillé, puis décroît de ~2 points par % de dépassement, plancher
+// à 0,45. Ex. : +5 % → 0,90 · +10 % → 0,80 · +20 % → 0,60 · +27,5 % → 0,45.
+const PRICE = { penaltyPerPct: 0.02, floor: 0.45 };
+
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
@@ -50,6 +58,18 @@ function baseScore(s: StatSnapshot) {
   return Math.round(clamp(raw, 0, 100));
 }
 
+/** Pourcentage de dépassement du prix conseillé (0 si non renseigné ou en dessous). */
+function priceOveragePct(price?: number, advisedPrice?: number | null) {
+  if (!advisedPrice || !price || price <= advisedPrice) return 0;
+  return ((price - advisedPrice) / advisedPrice) * 100;
+}
+
+/** Coefficient multiplicateur appliqué à l'indice statistique selon l'écart de prix. */
+function priceFactor(overagePct: number) {
+  if (overagePct <= 0) return 1;
+  return clamp(1 - overagePct * PRICE.penaltyPerPct, PRICE.floor, 1);
+}
+
 /**
  * @param latest    Dernier relevé hebdomadaire (ou null si aucun).
  * @param opts      Contexte optionnel : ancienneté du mandat, prix / prix de conseil.
@@ -60,14 +80,19 @@ export function analyzeVehicle(
 ): Diagnostic | null {
   if (!latest) return null;
 
-  const base = baseScore(latest);
   const { views, contacts, visits, offers } = latest;
+
+  // Corrélation prix ↔ stats : l'indice statistique brut est pondéré par le
+  // coefficient de prix, de sorte qu'un même niveau de traction donne un
+  // pourcentage de vente d'autant plus faible que le tarif dépasse le conseil.
+  const overagePct = priceOveragePct(opts?.price, opts?.advisedPrice);
+  const base = Math.round(clamp(baseScore(latest) * priceFactor(overagePct), 0, 100));
 
   // Écart au prix de conseil, pour enrichir les verdicts « prix trop élevé ».
   let priceGapText = "";
-  if (opts?.advisedPrice && opts?.price && opts.price > opts.advisedPrice) {
-    const pct = Math.round(((opts.price - opts.advisedPrice) / opts.advisedPrice) * 100);
-    if (pct >= 3) priceGapText = ` (~${pct} % au-dessus du prix de conseil)`;
+  const roundedOverage = Math.round(overagePct);
+  if (roundedOverage >= 3) {
+    priceGapText = ` (~${roundedOverage} % au-dessus du prix de conseil)`;
   }
 
   // 1. Offres : vente quasi acquise.

@@ -152,6 +152,7 @@ export default async function ClientVehicleDetailPage({
             <PriceProposalPanel
               vehicleId={vehicle.id}
               currentPrice={vehicle.price}
+              advisedPrice={vehicle.advisedPrice}
               latestProposal={
                 latestProposalRow
                   ? {

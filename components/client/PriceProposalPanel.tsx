@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { proposePriceAdjustment, type ProposePriceState } from "@/lib/actions/priceProposals";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -40,10 +40,12 @@ function SubmitButton() {
 export default function PriceProposalPanel({
   vehicleId,
   currentPrice,
+  advisedPrice,
   latestProposal,
 }: {
   vehicleId: string;
   currentPrice: number;
+  advisedPrice: number | null;
   latestProposal: LatestProposal;
 }) {
   const [state, formAction] = useActionState<ProposePriceState, FormData>(
@@ -52,6 +54,24 @@ export default function PriceProposalPanel({
   );
 
   const isPending = latestProposal?.status === "PENDING";
+
+  // Champ contrôlé : quand le client arrive sur le panneau via le CTA
+  // « Proposer une baisse de prix » (ancre #proposer-prix), on pré-remplit le
+  // champ avec le prix conseillé — sans jamais soumettre. On ne réécrit pas une
+  // valeur déjà saisie par le client.
+  const [price, setPrice] = useState("");
+
+  useEffect(() => {
+    if (advisedPrice == null) return;
+    const prefill = () => {
+      if (window.location.hash === "#proposer-prix") {
+        setPrice((current) => (current === "" ? String(advisedPrice) : current));
+      }
+    };
+    prefill(); // cas où la page est chargée directement avec l'ancre
+    window.addEventListener("hashchange", prefill);
+    return () => window.removeEventListener("hashchange", prefill);
+  }, [advisedPrice]);
 
   return (
     <div className="rounded-lg border border-ink-100 bg-white p-6">
@@ -87,12 +107,19 @@ export default function PriceProposalPanel({
             <div className="flex-1">
               <label className="mb-1 block text-sm font-medium text-ink-800">
                 Prix proposé (€)
+                {advisedPrice != null && (
+                  <span className="ml-1 font-normal text-ink-400">
+                    — prix conseillé : {formatPrice(advisedPrice)}
+                  </span>
+                )}
               </label>
               <input
                 name="proposedPrice"
                 type="number"
                 min={1}
                 required
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
                 className="w-full rounded-md border border-ink-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
               />
             </div>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
+import ClientStatusBadge from "@/components/ClientStatusBadge";
 import { formatDate } from "@/lib/format";
 import EditClientForm from "./EditClientForm";
 import InviteLinkButton from "./InviteLinkButton";
@@ -22,12 +23,18 @@ export default async function ClientDetailPage({
 
   if (!client) notFound();
 
+  // Actif = au moins un véhicule encore en vente.
+  const isActive = client.vehicles.some((v) => v.status === "EN_VENTE");
+
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-ink-900">
-          {client.firstName} {client.lastName}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-semibold text-ink-900">
+            {client.firstName} {client.lastName}
+          </h1>
+          <ClientStatusBadge active={isActive} />
+        </div>
         <p className="text-sm text-ink-500">Client depuis le {formatDate(client.createdAt)}</p>
       </div>
 
