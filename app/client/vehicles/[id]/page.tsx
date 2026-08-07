@@ -11,6 +11,7 @@ import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailC
 import HistoryTable from "@/components/client/HistoryTable";
 import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 import SharePanel from "@/components/client/SharePanel";
+import AccelerateSaleModal from "@/components/client/AccelerateSaleModal";
 
 export default async function ClientVehicleDetailPage({
   params,
@@ -166,7 +167,7 @@ export default async function ClientVehicleDetailPage({
             />
           </div>
 
-          <div className="order-9 lg:order-none">
+          <div id="partager-annonce" className="order-9 lg:order-none">
             <SharePanel vehicleId={vehicle.id} clickCount={vehicle._count.shareClicks} />
           </div>
 
@@ -197,14 +198,19 @@ export default async function ClientVehicleDetailPage({
               <SellabilityCard
                 diagnostic={diagnostic}
                 cta={
-                  <a
-                    href="#proposer-prix"
-                    className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
-                  >
-                    {diagnostic.suggestPriceDrop
-                      ? "Proposer une baisse de prix →"
-                      : "Accélérer ma vente →"}
-                  </a>
+                  diagnostic.suggestPriceDrop ? (
+                    <a
+                      href="#proposer-prix"
+                      className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                    >
+                      Proposer une baisse de prix →
+                    </a>
+                  ) : (
+                    <AccelerateSaleModal
+                      advisedPrice={vehicle.advisedPrice}
+                      currentPrice={vehicle.price}
+                    />
+                  )
                 }
               />
             </div>
