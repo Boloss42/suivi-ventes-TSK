@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import { vehicleSchema, clientSchema } from "@/lib/validation";
@@ -35,6 +36,7 @@ function parseVehicleForm(formData: FormData) {
     fuelType: formData.get("fuelType"),
     reference: formData.get("reference"),
     price: formData.get("price"),
+    advisedPrice: formData.get("advisedPrice") ?? "",
     status: formData.get("status"),
     depositDate: formData.get("depositDate"),
     listingUrls: extractListingUrls(formData),
@@ -149,6 +151,9 @@ export async function createVehicle(
     clientId = client.id;
   }
 
+  const advisedPrice =
+    typeof parsed.data.advisedPrice === "number" ? parsed.data.advisedPrice : null;
+
   const vehicle = await prisma.vehicle.create({
     data: {
       agencyId,
@@ -160,9 +165,12 @@ export async function createVehicle(
       fuelType: parsed.data.fuelType,
       reference: parsed.data.reference,
       price: parsed.data.price,
+      advisedPrice,
       status: parsed.data.status,
       depositDate: new Date(parsed.data.depositDate),
       listingUrls: { create: parsed.data.listingUrls },
+      // Première entrée de l'historique de prix.
+      priceChanges: { create: { price: parsed.data.price } },
     },
   });
 
@@ -218,7 +226,10 @@ export async function updateVehicle(
     return { error: "Cette immatriculation / référence est déjà utilisée." };
   }
 
-  await prisma.$transaction([
+  const advisedPrice =
+    typeof parsed.data.advisedPrice === "number" ? parsed.data.advisedPrice : null;
+
+  const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.listingUrl.deleteMany({ where: { vehicleId } }),
     prisma.vehicle.update({
       where: { id: vehicleId },
@@ -231,12 +242,20 @@ export async function updateVehicle(
         fuelType: parsed.data.fuelType,
         reference: parsed.data.reference,
         price: parsed.data.price,
+        advisedPrice,
         status: parsed.data.status,
         depositDate: new Date(parsed.data.depositDate),
         listingUrls: { create: parsed.data.listingUrls },
       },
     }),
-  ]);
+  ];
+
+  // Historise le prix uniquement s'il a réellement changé.
+  if (parsed.data.price !== existingVehicle.price) {
+    ops.push(prisma.priceChange.create({ data: { vehicleId, price: parsed.data.price } }));
+  }
+
+  await prisma.$transaction(ops);
 
   await savePhotos(vehicleId, formData);
 

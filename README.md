@@ -277,6 +277,36 @@ staff transmet le lien/QR par le moyen de son choix. Le client retrouve ce
 lien à tout moment dans son espace, sous « Avis Google », et reçoit une
 notification in-app à chaque demande.
 
+## Indice de vendabilité & diagnostic
+
+Le client ne voit pas que des chiffres bruts : un moteur de règles unifié
+([`lib/diagnostic.ts`](lib/diagnostic.ts)) transforme le dernier relevé
+hebdomadaire en un **indice de vendabilité** (0-100 %, auto-calculé) et une
+**phrase de diagnostic** en langage naturel, affichés dans la carte « Chances
+de vente » (fiche véhicule client et staff). Le score suit l'entonnoir de vente
+(offres et visites pèsent le plus). Principe directeur : le prix est le levier
+n°1 — tout signal négatif (peu de visibilité, beaucoup de vues sans contact,
+contacts sans visite, ancienneté sans traction) conclut sur un tarif trop élevé
+et incite le client à proposer une baisse (CTA vers le panneau de proposition).
+
+## Prix de conseil, historique du prix, durée du mandat
+
+- **Prix de conseil** (`Vehicle.advisedPrice`, saisi par l'agent) : prix
+  conseillé, affiché au client comme repère, avec l'écart par rapport au prix
+  actuel.
+- **Historique du prix** (`PriceChange`) : chaque changement de prix (édition
+  du véhicule ou proposition acceptée) est historisé et affiché.
+- **Durée du mandat** : « En ligne depuis 47 jours » / « Près de 2 mois »,
+  calculé depuis `depositDate`.
+
+## Partage tracké de l'annonce
+
+Le client peut générer un **lien de partage public** (`/a/<token>`) à diffuser
+à son réseau. Cette page publique n'expose que des informations non sensibles
+du véhicule (marque, modèle, prix, photos, liens vers les annonces) — **aucune
+donnée personnelle ni statistique**. Chaque visite est comptabilisée
+(`ShareClick`) et le nombre de clics est affiché au client et à l'agent.
+
 ## Propositions d'ajustement de prix
 
 Sur la fiche de chaque véhicule, le client peut proposer un nouveau prix

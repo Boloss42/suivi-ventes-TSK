@@ -45,6 +45,7 @@ export const vehicleSchema = z.object({
   fuelType: z.string().min(1, "Motorisation requise"),
   reference: z.string().min(1, "Immatriculation / référence requise"),
   price: z.coerce.number().int().min(0),
+  advisedPrice: z.union([z.coerce.number().int().min(0), z.literal("")]).optional(),
   status: z.enum(vehicleStatusValues),
   depositDate: z.string().min(1, "Date de mise en dépôt requise"),
   listingUrls: z.array(listingUrlSchema).optional().default([]),

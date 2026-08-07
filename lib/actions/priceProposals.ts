@@ -89,6 +89,9 @@ export async function respondToPriceProposal(
         where: { id: proposal.vehicleId },
         data: { price: proposal.proposedPrice },
       }),
+      prisma.priceChange.create({
+        data: { vehicleId: proposal.vehicleId, price: proposal.proposedPrice },
+      }),
     );
   }
 

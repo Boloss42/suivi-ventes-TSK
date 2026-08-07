@@ -52,6 +52,7 @@ export default function VehicleForm({
     fuelType: string;
     reference: string;
     price: number;
+    advisedPrice: number | null;
     status: string;
     depositDate: string;
     listingUrls: ListingUrlValue[];
@@ -250,6 +251,21 @@ export default function VehicleForm({
             defaultValue={defaultValues?.price}
             className={inputClass}
           />
+        </div>
+        <div>
+          <label className={labelClass}>
+            Prix de conseil (€) <span className="font-normal text-ink-400">(optionnel)</span>
+          </label>
+          <input
+            name="advisedPrice"
+            type="number"
+            min={0}
+            defaultValue={defaultValues?.advisedPrice ?? ""}
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-ink-400">
+            Prix auquel vous estimez que le véhicule devrait se vendre. Affiché au client comme repère.
+          </p>
         </div>
         <div>
           <label className={labelClass}>Statut</label>

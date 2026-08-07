@@ -103,19 +103,47 @@ model Vehicle {
   // légitimement réutiliser une même référence interne.
   reference      String
   price          Int
+  // Prix de conseil de l'agent (prix auquel il estime que le véhicule devrait
+  // se vendre) : facultatif, affiché au client comme repère.
+  advisedPrice   Int?
   status         VehicleStatus   @default(EN_VENTE)
   depositDate    DateTime
+  // Jeton du lien de partage public (/a/<token>), généré à la demande.
+  shareToken     String?         @unique
   listingUrls    ListingUrl[]
   photos         Photo[]
   weeklyStats    WeeklyStat[]
   notifications  Notification[]
   priceProposals PriceProposal[]
+  priceChanges   PriceChange[]
+  shareClicks    ShareClick[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@unique([agencyId, reference])
   @@index([clientId])
   @@index([agencyId])
+}
+
+// Historique des prix nets vendeur d'un véhicule (une entrée par changement).
+model PriceChange {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  price     Int
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId])
+}
+
+// Un clic sur le lien de partage public d'un véhicule.
+model ShareClick {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId])
 }
 
 model ListingUrl {

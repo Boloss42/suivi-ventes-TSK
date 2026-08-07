@@ -48,6 +48,7 @@ export default async function EditVehiclePage({
           fuelType: vehicle.fuelType,
           reference: vehicle.reference,
           price: vehicle.price,
+          advisedPrice: vehicle.advisedPrice,
           status: vehicle.status,
           depositDate: vehicle.depositDate.toISOString().slice(0, 10),
           listingUrls: vehicle.listingUrls.map((l) => ({ label: l.label, url: l.url })),

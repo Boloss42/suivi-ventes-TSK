@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
-import { formatDate, formatPrice, formatMileage } from "@/lib/format";
+import SellabilityCard from "@/components/SellabilityCard";
+import { formatDate, formatPrice, formatMileage, formatMandateAge, daysSince } from "@/lib/format";
 import { currentWeekStart, formatWeekLabel } from "@/lib/week";
+import { analyzeVehicle } from "@/lib/diagnostic";
 import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 
 export default async function VehicleDetailPage({
@@ -23,6 +25,8 @@ export default async function VehicleDetailPage({
       photos: { orderBy: { order: "asc" } },
       listingUrls: true,
       weeklyStats: { orderBy: { weekStart: "desc" } },
+      priceChanges: { orderBy: { createdAt: "desc" } },
+      _count: { select: { shareClicks: true } },
     },
   });
 
@@ -33,6 +37,21 @@ export default async function VehicleDetailPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const latestStat = vehicle.weeklyStats[0];
+  const diagnostic = analyzeVehicle(
+    latestStat
+      ? {
+          views: latestStat.views,
+          contacts: latestStat.contacts,
+          calls: latestStat.calls,
+          favorites: latestStat.favorites,
+          visits: latestStat.visits,
+          offers: latestStat.offers,
+        }
+      : null,
+    { mandateDays: daysSince(vehicle.depositDate), price: vehicle.price, advisedPrice: vehicle.advisedPrice },
+  );
+
   const thisWeek = currentWeekStart();
   const hasThisWeekStat = vehicle.weeklyStats.some(
     (s) => s.weekStart.getTime() === thisWeek.getTime(),
@@ -42,11 +61,16 @@ export default async function VehicleDetailPage({
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="mb-1 flex items-center gap-3">
+          <div className="mb-1 flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-semibold text-ink-900">
               {vehicle.make} {vehicle.model} ({vehicle.year})
             </h1>
             <StatusBadge status={vehicle.status} />
+            {vehicle.status === "EN_VENTE" && (
+              <span className="rounded-full bg-ink-100 px-2.5 py-0.5 text-xs font-medium text-ink-600">
+                En ligne depuis {formatMandateAge(vehicle.depositDate)}
+              </span>
+            )}
           </div>
           <p className="text-sm text-ink-500">
             Propriétaire :{" "}
@@ -86,9 +110,37 @@ export default async function VehicleDetailPage({
               <Row label="Motorisation" value={vehicle.fuelType} />
               <Row label="Référence" value={vehicle.reference} />
               <Row label="Prix net vendeur" value={formatPrice(vehicle.price)} />
+              {vehicle.advisedPrice != null && (
+                <Row label="Prix de conseil" value={formatPrice(vehicle.advisedPrice)} />
+              )}
               <Row label="Mise en dépôt" value={formatDate(vehicle.depositDate)} />
             </dl>
           </div>
+
+          {vehicle.priceChanges.length > 1 && (
+            <div className="rounded-lg border border-ink-100 bg-white p-6">
+              <h2 className="mb-3 text-sm font-semibold text-ink-800">Historique du prix</h2>
+              <ul className="space-y-2 text-sm">
+                {vehicle.priceChanges.map((change, i) => {
+                  const previous = vehicle.priceChanges[i + 1];
+                  const diff = previous ? change.price - previous.price : 0;
+                  return (
+                    <li key={change.id} className="flex items-center justify-between gap-2">
+                      <span className="text-ink-500">{formatDate(change.createdAt)}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium text-ink-900">{formatPrice(change.price)}</span>
+                        {diff !== 0 && (
+                          <span className={diff < 0 ? "text-xs text-emerald-600" : "text-xs text-red-600"}>
+                            {diff < 0 ? "↓" : "↑"} {formatPrice(Math.abs(diff))}
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           {priceProposals.length > 0 && (
             <div className="rounded-lg border border-ink-100 bg-white p-6">
@@ -179,10 +231,22 @@ export default async function VehicleDetailPage({
           )}
         </div>
 
-        <div className="min-w-0 rounded-lg border border-ink-100 bg-white p-6">
-          <h2 className="mb-4 text-sm font-semibold text-ink-800">
-            Historique des relevés ({vehicle.weeklyStats.length})
-          </h2>
+        <div className="min-w-0 space-y-6">
+          {diagnostic && <SellabilityCard diagnostic={diagnostic} />}
+
+          {vehicle._count.shareClicks > 0 && (
+            <p className="text-sm text-ink-500">
+              Lien de partage du client :{" "}
+              <span className="font-medium text-ink-800">
+                {vehicle._count.shareClicks} clic{vehicle._count.shareClicks > 1 ? "s" : ""}
+              </span>
+            </p>
+          )}
+
+          <div className="rounded-lg border border-ink-100 bg-white p-6">
+            <h2 className="mb-4 text-sm font-semibold text-ink-800">
+              Historique des relevés ({vehicle.weeklyStats.length})
+            </h2>
 
           {vehicle.weeklyStats.length === 0 ? (
             <p className="text-sm text-ink-400">Aucun relevé saisi pour le moment.</p>
@@ -225,6 +289,7 @@ export default async function VehicleDetailPage({
               </table>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

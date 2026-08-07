@@ -20,6 +20,14 @@ export async function buildInviteUrl(token: string) {
   return `${proto}://${host}/activate/${token}`;
 }
 
+/** URL absolue du lien de partage public d'une annonce, déduite de la requête. */
+export async function buildShareUrl(token: string) {
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}/a/${token}`;
+}
+
 /** QR code de l'URL fournie, au format SVG (chaîne de balisage à injecter directement). */
 export async function generateQrSvg(url: string) {
   return QRCode.toString(url, {
