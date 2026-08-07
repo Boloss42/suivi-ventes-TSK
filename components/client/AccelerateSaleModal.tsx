@@ -63,7 +63,7 @@ export default function AccelerateSaleModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+        className="press inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
       >
         Accélérer ma vente →
       </button>
@@ -135,7 +135,7 @@ export default function AccelerateSaleModal({
                 <button
                   type="button"
                   onClick={goToShare}
-                  className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                  className="press rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
                 >
                   Partager mon annonce →
                 </button>
@@ -181,7 +181,7 @@ export default function AccelerateSaleModal({
                 <button
                   type="button"
                   onClick={goToPriceProposal}
-                  className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                  className="press rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
                 >
                   Proposer un ajustement de prix →
                 </button>

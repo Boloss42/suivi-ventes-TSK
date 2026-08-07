@@ -25,7 +25,7 @@ export default async function ClientDashboardPage() {
       <h1 className="mb-6 text-xl font-semibold text-ink-900">Mes véhicules</h1>
 
       {client?.assignedStaff && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-100 bg-white p-4">
+        <div className="animate-rise mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-100 bg-white p-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
               Votre conseillé
@@ -45,7 +45,7 @@ export default async function ClientDashboardPage() {
           {client.assignedStaff.phone && (
             <a
               href={`tel:${client.assignedStaff.phone.replace(/\s+/g, "")}`}
-              className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-600"
+              className="press inline-flex items-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -71,15 +71,21 @@ export default async function ClientDashboardPage() {
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {vehicles.map((vehicle) => (
+          {vehicles.map((vehicle, i) => (
             <Link
               key={vehicle.id}
               href={`/client/vehicles/${vehicle.id}`}
-              className="overflow-hidden rounded-lg border border-ink-100 bg-white transition hover:border-brand-300"
+              style={{ animationDelay: `${i * 70}ms` }}
+              className="card-lift animate-rise group overflow-hidden rounded-lg border border-ink-100 bg-white hover:border-brand-300"
             >
-              <div className="relative flex aspect-video items-center justify-center bg-ink-100 text-ink-300">
+              <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-ink-100 text-ink-300">
                 {vehicle.photos[0] ? (
-                  <Image src={vehicle.photos[0].url} alt="" fill className="object-cover" />
+                  <Image
+                    src={vehicle.photos[0].url}
+                    alt=""
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
                 ) : (
                   <span className="text-sm">Pas de photo</span>
                 )}

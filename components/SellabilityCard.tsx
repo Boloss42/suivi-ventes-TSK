@@ -20,7 +20,7 @@ export default function SellabilityCard({
   const style = TONE_STYLES[diagnostic.tone];
 
   return (
-    <div className={`rounded-lg border border-ink-100 p-6 ${style.badge}`}>
+    <div className={`animate-rise rounded-lg border border-ink-100 p-6 ${style.badge}`}>
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold text-ink-800">Chances de vente</h2>
@@ -31,8 +31,13 @@ export default function SellabilityCard({
 
       <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-white/70">
         <div
-          className={`h-full rounded-full ${style.bar}`}
-          style={{ width: `${diagnostic.score}%` }}
+          className={`bar-grow h-full rounded-full ${style.bar}`}
+          style={
+            {
+              width: `${diagnostic.score}%`,
+              "--bar-target": `${diagnostic.score}%`,
+            } as React.CSSProperties
+          }
         />
       </div>
 

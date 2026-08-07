@@ -52,10 +52,10 @@ export default async function StaffDashboardPage() {
       <h1 className="mb-6 text-xl font-semibold text-ink-900">Tableau de bord</h1>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Véhicules en vente" value={enVenteCount} />
-        <KpiCard label="Véhicules vendus" value={venduCount} />
-        <KpiCard label="Véhicules retirés" value={retireCount} />
-        <KpiCard label="Clients" value={clientCount} />
+        <KpiCard label="Véhicules en vente" value={enVenteCount} accent="brand" index={0} />
+        <KpiCard label="Véhicules vendus" value={venduCount} accent="emerald" index={1} />
+        <KpiCard label="Véhicules retirés" value={retireCount} accent="ink" index={2} />
+        <KpiCard label="Clients" value={clientCount} accent="blue" index={3} />
       </div>
 
       {pendingProposals.length > 0 && (
@@ -167,11 +167,12 @@ export default async function StaffDashboardPage() {
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {vehiclesEnVente.map((vehicle) => (
+            {vehiclesEnVente.map((vehicle, i) => (
               <Link
                 key={vehicle.id}
                 href={`/staff/vehicles/${vehicle.id}`}
-                className="flex items-center gap-3 rounded-lg border border-ink-100 bg-white p-3 transition hover:border-brand-300"
+                style={{ animationDelay: `${i * 60}ms` }}
+                className="card-lift animate-rise flex items-center gap-3 rounded-lg border border-ink-100 bg-white p-3 hover:border-brand-300"
               >
                 <VehicleThumbnail
                   photoUrl={vehicle.photos[0]?.url}
@@ -199,9 +200,30 @@ export default async function StaffDashboardPage() {
   );
 }
 
-function KpiCard({ label, value }: { label: string; value: number }) {
+const KPI_ACCENTS = {
+  brand: "bg-brand-500",
+  emerald: "bg-emerald-500",
+  blue: "bg-blue-500",
+  ink: "bg-ink-300",
+} as const;
+
+function KpiCard({
+  label,
+  value,
+  accent = "brand",
+  index = 0,
+}: {
+  label: string;
+  value: number;
+  accent?: keyof typeof KPI_ACCENTS;
+  index?: number;
+}) {
   return (
-    <div className="rounded-lg border border-ink-100 bg-white p-5">
+    <div
+      style={{ animationDelay: `${index * 70}ms` }}
+      className="card-lift animate-rise relative overflow-hidden rounded-lg border border-ink-100 bg-white p-5"
+    >
+      <span className={`absolute inset-y-0 left-0 w-1 ${KPI_ACCENTS[accent]}`} />
       <p className="text-sm text-ink-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-ink-900">{value}</p>
     </div>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   /* Rose Transakauto — couleur de marque, exacte à #ec028c en position 500 */
   --color-brand-50: #fdf1f8;
@@ -47,4 +47,73 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] {
   appearance: textfield;
+}
+
+/* ---------------------------------------------------------------------------
+   Micro-animations — rendre l'interface un peu plus vivante sans surcharger.
+   Tout est désactivé si l'utilisateur préfère réduire les animations.
+--------------------------------------------------------------------------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--bar-target, 0%);
+  }
+}
+
+/* Apparition en fondu + léger glissement vers le haut. */
+.animate-rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Barre de progression qui se remplit au chargement (jauge de vendabilité). */
+.bar-grow {
+  animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Élévation douce au survol des cartes cliquables. */
+.card-lift {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -14px rgba(13, 13, 13, 0.22);
+}
+
+/* Retour tactile au clic sur les boutons/liens principaux. */
+.press:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .bar-grow {
+    animation: none;
+  }
+  .card-lift,
+  .press {
+    transition: none;
+  }
+  .card-lift:hover {
+    transform: none;
+  }
+  .press:active {
+    transform: none;
+  }
 }

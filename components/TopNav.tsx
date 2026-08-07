@@ -27,10 +27,13 @@ export default function TopNav({
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex items-center justify-between gap-3 py-3">
           <div className="flex items-center gap-6">
-            <Link href={homeHref} className="text-base font-semibold text-brand-500">
+            <Link
+              href={homeHref}
+              className="shrink-0 whitespace-nowrap bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-base font-semibold text-transparent transition hover:opacity-80"
+            >
               Mon suivi perso
             </Link>
-            <nav className="hidden flex-wrap gap-1 sm:flex">
+            <nav className="hidden flex-wrap gap-1 lg:flex">
               {items.map((item) => (
                 <Link
                   key={item.href}
@@ -45,9 +48,9 @@ export default function TopNav({
 
           {/* Profil / déconnexion : visible en permanence sur desktop, regroupé
               derrière un bouton sur mobile pour ne pas se mélanger à la nav. */}
-          <div className="hidden items-center gap-3 sm:flex">
+          <div className="hidden items-center gap-3 lg:flex">
             {extra}
-            <span className="text-sm text-ink-500">{userLabel}</span>
+            <span className="max-w-[16rem] truncate text-sm text-ink-500">{userLabel}</span>
             <form action={logout}>
               <button
                 type="submit"
@@ -58,7 +61,7 @@ export default function TopNav({
             </form>
           </div>
 
-          <div className="flex items-center gap-2 sm:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             {extra}
             <button
               type="button"
@@ -84,8 +87,8 @@ export default function TopNav({
           </div>
         </div>
 
-        {/* Nav principale sur mobile : rangée dédiée, séparée du profil. */}
-        <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-3 sm:hidden">
+        {/* Nav principale sur mobile / tablette : rangée dédiée, séparée du profil. */}
+        <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-3 lg:hidden">
           {items.map((item) => (
             <Link
               key={item.href}
@@ -99,7 +102,7 @@ export default function TopNav({
       </div>
 
       {profileOpen && (
-        <div className="border-t border-ink-100 bg-ink-50 px-4 py-3 sm:hidden">
+        <div className="border-t border-ink-100 bg-ink-50 px-4 py-3 lg:hidden">
           <p className="mb-3 truncate text-sm text-ink-500">{userLabel}</p>
           <form action={logout}>
             <button
