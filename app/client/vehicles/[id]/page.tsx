@@ -197,14 +197,14 @@ export default async function ClientVehicleDetailPage({
               <SellabilityCard
                 diagnostic={diagnostic}
                 cta={
-                  diagnostic.suggestPriceDrop ? (
-                    <a
-                      href="#proposer-prix"
-                      className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
-                    >
-                      Proposer une baisse de prix →
-                    </a>
-                  ) : undefined
+                  <a
+                    href="#proposer-prix"
+                    className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                  >
+                    {diagnostic.suggestPriceDrop
+                      ? "Proposer une baisse de prix →"
+                      : "Accélérer ma vente →"}
+                  </a>
                 }
               />
             </div>

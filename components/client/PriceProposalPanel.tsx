@@ -62,7 +62,10 @@ export default function PriceProposalPanel({
   const [price, setPrice] = useState("");
 
   useEffect(() => {
-    if (advisedPrice == null) return;
+    // On ne pré-remplit que si le prix conseillé représente une vraie baisse
+    // par rapport au prix actuel (sinon, cas « Accélérer ma vente » sur un
+    // véhicule déjà bien tarifé, on laisse le champ vide).
+    if (advisedPrice == null || advisedPrice >= currentPrice) return;
     const prefill = () => {
       if (window.location.hash === "#proposer-prix") {
         setPrice((current) => (current === "" ? String(advisedPrice) : current));
@@ -71,7 +74,7 @@ export default function PriceProposalPanel({
     prefill(); // cas où la page est chargée directement avec l'ancre
     window.addEventListener("hashchange", prefill);
     return () => window.removeEventListener("hashchange", prefill);
-  }, [advisedPrice]);
+  }, [advisedPrice, currentPrice]);
 
   return (
     <div className="rounded-lg border border-ink-100 bg-white p-6">

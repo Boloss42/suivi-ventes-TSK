@@ -9,6 +9,7 @@ import { formatDate, formatPrice, formatMileage, formatMandateAge, daysSince } f
 import { currentWeekStart, formatWeekLabel } from "@/lib/week";
 import { analyzeVehicle } from "@/lib/diagnostic";
 import { respondToPriceProposal } from "@/lib/actions/priceProposals";
+import DeleteStatButton from "@/components/DeleteStatButton";
 
 export default async function VehicleDetailPage({
   params,
@@ -265,12 +266,15 @@ export default async function VehicleDetailPage({
                       <td className="py-2 pr-4 text-ink-600">{stat.visits}</td>
                       <td className="py-2 pr-4 text-ink-600">{stat.offers}</td>
                       <td className="py-2 pr-4">
-                        <Link
-                          href={`/staff/vehicles/${vehicle.id}/stats/${stat.id}/edit`}
-                          className="text-brand-700 hover:underline"
-                        >
-                          Modifier
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link
+                            href={`/staff/vehicles/${vehicle.id}/stats/${stat.id}/edit`}
+                            className="text-brand-700 hover:underline"
+                          >
+                            Modifier
+                          </Link>
+                          <DeleteStatButton statId={stat.id} />
+                        </div>
                       </td>
                     </tr>
                   ))}

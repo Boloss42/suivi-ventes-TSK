@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import StatForm from "@/components/StatForm";
+import DeleteStatButton from "@/components/DeleteStatButton";
 import { updateWeeklyStat } from "@/lib/actions/stats";
 
 export default async function EditStatPage({
@@ -44,6 +45,13 @@ export default async function EditStatPage({
           note: stat.note ?? "",
         }}
       />
+
+      <div className="mt-6 border-t border-ink-100 pt-4">
+        <p className="mb-2 text-sm text-ink-500">
+          Supprimer définitivement ce relevé de l&apos;historique.
+        </p>
+        <DeleteStatButton statId={stat.id} variant="button" />
+      </div>
     </div>
   );
 }

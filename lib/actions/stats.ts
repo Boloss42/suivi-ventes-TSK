@@ -131,3 +131,23 @@ export async function updateWeeklyStat(
   revalidatePath("/staff/dashboard");
   redirect(`/staff/vehicles/${parsed.data.vehicleId}`);
 }
+
+export async function deleteWeeklyStat(statId: string) {
+  const { agencyId, userId } = await requireStaff();
+
+  // Isolation stricte : on ne supprime qu'un relevé d'un véhicule de sa propre
+  // agence dont on est le commercial attribué.
+  const stat = await prisma.weeklyStat.findFirst({
+    where: { id: statId, vehicle: { agencyId, client: { assignedStaffId: userId } } },
+    select: { id: true, vehicleId: true },
+  });
+  if (!stat) return;
+
+  await prisma.weeklyStat.delete({ where: { id: stat.id } });
+
+  revalidatePath(`/staff/vehicles/${stat.vehicleId}`);
+  revalidatePath("/staff/dashboard");
+  revalidatePath("/client/dashboard");
+  revalidatePath(`/client/vehicles/${stat.vehicleId}`);
+  redirect(`/staff/vehicles/${stat.vehicleId}`);
+}

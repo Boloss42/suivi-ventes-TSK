@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatMileage } from "@/lib/format";
 
@@ -35,6 +35,17 @@ export default async function PublicListingPage({
 
   // Enregistre le clic (mesure de la diffusion par le vendeur).
   await prisma.shareClick.create({ data: { vehicleId: vehicle.id } });
+
+  // Le lien de partage doit amener le visiteur directement sur l'annonce en
+  // ligne (LeBonCoin en priorité, sinon la première annonce disponible). La
+  // page ci-dessous ne sert que de repli si aucune annonce n'est renseignée.
+  if (vehicle.listingUrls.length > 0) {
+    const target =
+      vehicle.listingUrls.find(
+        (l) => /leboncoin/i.test(l.url) || /leboncoin/i.test(l.label),
+      ) ?? vehicle.listingUrls[0];
+    redirect(target.url);
+  }
 
   return (
     <main className="min-h-screen bg-ink-50">
