@@ -99,4 +99,5 @@ export async function respondToPriceProposal(
 
   revalidatePath(`/staff/vehicles/${proposal.vehicleId}`);
   revalidatePath(`/client/vehicles/${proposal.vehicleId}`);
+  revalidatePath("/staff/dashboard");
 }

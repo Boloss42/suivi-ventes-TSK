@@ -85,10 +85,10 @@ export default async function ClientVehicleDetailPage({
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-        <div className="min-w-0 space-y-4">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[380px_1fr]">
+        <div className="contents lg:block lg:min-w-0 lg:space-y-4">
           {vehicle.photos.length > 0 && (
-            <div className="overflow-hidden rounded-lg border border-ink-100 bg-white">
+            <div className="order-1 overflow-hidden rounded-lg border border-ink-100 bg-white lg:order-none">
               <div className="relative aspect-video">
                 <Image src={vehicle.photos[0].url} alt="" fill className="object-cover" />
               </div>
@@ -104,7 +104,7 @@ export default async function ClientVehicleDetailPage({
             </div>
           )}
 
-          <div className="rounded-lg border border-ink-100 bg-white p-6">
+          <div className="order-2 rounded-lg border border-ink-100 bg-white p-6 lg:order-none">
             <h2 className="mb-3 text-sm font-semibold text-ink-800">Caractéristiques</h2>
             <dl className="space-y-2 text-sm">
               <Row label="Kilométrage" value={formatMileage(vehicle.mileage)} />
@@ -115,36 +115,21 @@ export default async function ClientVehicleDetailPage({
           </div>
 
           {vehicle.priceChanges.length > 1 && (
-            <div className="rounded-lg border border-ink-100 bg-white p-6">
+            <div className="order-6 rounded-lg border border-ink-100 bg-white p-6 lg:order-none">
               <h2 className="mb-3 text-sm font-semibold text-ink-800">Historique du prix</h2>
               <ul className="space-y-2 text-sm">
-                {vehicle.priceChanges.map((change, i) => {
-                  const previous = vehicle.priceChanges[i + 1];
-                  const diff = previous ? change.price - previous.price : 0;
-                  return (
-                    <li key={change.id} className="flex items-center justify-between gap-2">
-                      <span className="text-ink-500">{formatDate(change.createdAt)}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium text-ink-900">{formatPrice(change.price)}</span>
-                        {diff !== 0 && (
-                          <span
-                            className={
-                              diff < 0 ? "text-xs text-emerald-600" : "text-xs text-red-600"
-                            }
-                          >
-                            {diff < 0 ? "↓" : "↑"} {formatPrice(Math.abs(diff))}
-                          </span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
+                {vehicle.priceChanges.map((change) => (
+                  <li key={change.id} className="flex items-center justify-between gap-2">
+                    <span className="text-ink-500">{formatDate(change.createdAt)}</span>
+                    <span className="font-medium text-ink-900">{formatPrice(change.price)}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           )}
 
           {vehicle.advisedPrice != null && (
-            <div className="rounded-lg border border-ink-100 bg-white p-4">
+            <div className="order-7 rounded-lg border border-ink-100 bg-white p-4 lg:order-none">
               <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
                 Prix de conseil
               </p>
@@ -163,7 +148,7 @@ export default async function ClientVehicleDetailPage({
             </div>
           )}
 
-          <div id="proposer-prix">
+          <div id="proposer-prix" className="order-8 lg:order-none">
             <PriceProposalPanel
               vehicleId={vehicle.id}
               currentPrice={vehicle.price}
@@ -180,10 +165,12 @@ export default async function ClientVehicleDetailPage({
             />
           </div>
 
-          <SharePanel vehicleId={vehicle.id} clickCount={vehicle._count.shareClicks} />
+          <div className="order-9 lg:order-none">
+            <SharePanel vehicleId={vehicle.id} clickCount={vehicle._count.shareClicks} />
+          </div>
 
           {vehicle.listingUrls.length > 0 && (
-            <div className="rounded-lg border border-ink-100 bg-white p-6">
+            <div className="order-10 rounded-lg border border-ink-100 bg-white p-6 lg:order-none">
               <h2 className="mb-3 text-sm font-semibold text-ink-800">Voir l&apos;annonce</h2>
               <ul className="space-y-2 text-sm">
                 {vehicle.listingUrls.map((l) => (
@@ -203,50 +190,56 @@ export default async function ClientVehicleDetailPage({
           )}
         </div>
 
-        <div className="min-w-0 space-y-6">
+        <div className="contents lg:block lg:min-w-0 lg:space-y-6">
           {diagnostic && (
-            <SellabilityCard
-              diagnostic={diagnostic}
-              cta={
-                diagnostic.suggestPriceDrop ? (
-                  <a
-                    href="#proposer-prix"
-                    className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
-                  >
-                    Proposer une baisse de prix →
-                  </a>
-                ) : undefined
-              }
-            />
+            <div className="order-5 lg:order-none">
+              <SellabilityCard
+                diagnostic={diagnostic}
+                cta={
+                  diagnostic.suggestPriceDrop ? (
+                    <a
+                      href="#proposer-prix"
+                      className="inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                    >
+                      Proposer une baisse de prix →
+                    </a>
+                  ) : undefined
+                }
+              />
+            </div>
           )}
 
-          <StatDetailChart
-            data={chartData}
-            latestValues={{
-              views: latestStat?.views,
-              contacts: latestStat?.contacts,
-              calls: latestStat?.calls,
-              favorites: latestStat?.favorites,
-              visits: latestStat?.visits,
-              offers: latestStat?.offers,
-            }}
-            latestWeekLabel={latestStat ? formatDate(latestStat.weekStart) : null}
-          />
+          <div className="order-3 lg:order-none">
+            <StatDetailChart
+              data={chartData}
+              latestValues={{
+                views: latestStat?.views,
+                contacts: latestStat?.contacts,
+                calls: latestStat?.calls,
+                favorites: latestStat?.favorites,
+                visits: latestStat?.visits,
+                offers: latestStat?.offers,
+              }}
+              latestWeekLabel={latestStat ? formatDate(latestStat.weekStart) : null}
+            />
+          </div>
 
           {historyDesc.length > 0 && (
-            <HistoryTable
-              stats={historyDesc.map((stat) => ({
-                id: stat.id,
-                weekStart: stat.weekStart.toISOString(),
-                views: stat.views,
-                contacts: stat.contacts,
-                calls: stat.calls,
-                favorites: stat.favorites,
-                visits: stat.visits,
-                offers: stat.offers,
-                note: stat.note,
-              }))}
-            />
+            <div className="order-4 lg:order-none">
+              <HistoryTable
+                stats={historyDesc.map((stat) => ({
+                  id: stat.id,
+                  weekStart: stat.weekStart.toISOString(),
+                  views: stat.views,
+                  contacts: stat.contacts,
+                  calls: stat.calls,
+                  favorites: stat.favorites,
+                  visits: stat.visits,
+                  offers: stat.offers,
+                  note: stat.note,
+                }))}
+              />
+            </div>
           )}
         </div>
       </div>

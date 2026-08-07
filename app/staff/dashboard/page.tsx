@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import { currentWeekStart, formatWeekLabel } from "@/lib/week";
 import { formatPrice, formatMileage } from "@/lib/format";
+import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 import VehicleThumbnail from "@/components/VehicleThumbnail";
 
 export default async function StaffDashboardPage() {
@@ -10,22 +11,39 @@ export default async function StaffDashboardPage() {
   const thisWeek = currentWeekStart();
   const ownClient = { assignedStaffId: userId };
 
-  const [enVenteCount, venduCount, retireCount, clientCount, vehiclesEnVente] =
-    await Promise.all([
-      prisma.vehicle.count({ where: { agencyId, status: "EN_VENTE", client: ownClient } }),
-      prisma.vehicle.count({ where: { agencyId, status: "VENDU", client: ownClient } }),
-      prisma.vehicle.count({ where: { agencyId, status: "RETIRE", client: ownClient } }),
-      prisma.client.count({ where: { agencyId, assignedStaffId: userId } }),
-      prisma.vehicle.findMany({
-        where: { agencyId, status: "EN_VENTE", client: ownClient },
-        include: {
-          client: true,
-          weeklyStats: { where: { weekStart: thisWeek } },
-          photos: { orderBy: { order: "asc" }, take: 1 },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+  const [
+    enVenteCount,
+    venduCount,
+    retireCount,
+    clientCount,
+    vehiclesEnVente,
+    pendingProposals,
+  ] = await Promise.all([
+    prisma.vehicle.count({ where: { agencyId, status: "EN_VENTE", client: ownClient } }),
+    prisma.vehicle.count({ where: { agencyId, status: "VENDU", client: ownClient } }),
+    prisma.vehicle.count({ where: { agencyId, status: "RETIRE", client: ownClient } }),
+    prisma.client.count({ where: { agencyId, assignedStaffId: userId } }),
+    prisma.vehicle.findMany({
+      where: { agencyId, status: "EN_VENTE", client: ownClient },
+      include: {
+        client: true,
+        weeklyStats: { where: { weekStart: thisWeek } },
+        photos: { orderBy: { order: "asc" }, take: 1 },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.priceProposal.findMany({
+      where: {
+        status: "PENDING",
+        vehicle: { agencyId, client: { assignedStaffId: userId } },
+      },
+      include: {
+        vehicle: { select: { id: true, make: true, model: true, year: true, price: true } },
+        client: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   const missingThisWeek = vehiclesEnVente.filter((v) => v.weeklyStats.length === 0);
 
@@ -39,6 +57,62 @@ export default async function StaffDashboardPage() {
         <KpiCard label="Véhicules retirés" value={retireCount} />
         <KpiCard label="Clients" value={clientCount} />
       </div>
+
+      {pendingProposals.length > 0 && (
+        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-6">
+          <h2 className="mb-1 text-sm font-semibold text-ink-800">
+            Propositions de baisse de prix
+          </h2>
+          <p className="mb-4 text-sm text-ink-500">
+            Vos clients attendent votre réponse.
+          </p>
+
+          <ul className="space-y-3">
+            {pendingProposals.map((proposal) => (
+              <li
+                key={proposal.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-white px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-ink-900">
+                    {proposal.client.firstName} {proposal.client.lastName}
+                  </p>
+                  <p className="text-sm text-ink-500">
+                    {proposal.vehicle.make} {proposal.vehicle.model} ({proposal.vehicle.year})
+                  </p>
+                  <p className="mt-1 text-sm text-ink-700">
+                    de {formatPrice(proposal.vehicle.price)} → {" "}
+                    <span className="font-medium text-ink-900">
+                      {formatPrice(proposal.proposedPrice)}
+                    </span>
+                  </p>
+                  {proposal.message && (
+                    <p className="mt-1 text-sm text-ink-600">« {proposal.message} »</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <form action={respondToPriceProposal.bind(null, proposal.id, "ACCEPTED")}>
+                    <button
+                      type="submit"
+                      className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600"
+                    >
+                      Accepter
+                    </button>
+                  </form>
+                  <form action={respondToPriceProposal.bind(null, proposal.id, "REJECTED")}>
+                    <button
+                      type="submit"
+                      className="rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:bg-white"
+                    >
+                      Refuser
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mb-8 rounded-lg border border-ink-100 bg-white p-6">
         <h2 className="mb-1 text-sm font-semibold text-ink-800">

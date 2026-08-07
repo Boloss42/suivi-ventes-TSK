@@ -121,23 +121,12 @@ export default async function VehicleDetailPage({
             <div className="rounded-lg border border-ink-100 bg-white p-6">
               <h2 className="mb-3 text-sm font-semibold text-ink-800">Historique du prix</h2>
               <ul className="space-y-2 text-sm">
-                {vehicle.priceChanges.map((change, i) => {
-                  const previous = vehicle.priceChanges[i + 1];
-                  const diff = previous ? change.price - previous.price : 0;
-                  return (
-                    <li key={change.id} className="flex items-center justify-between gap-2">
-                      <span className="text-ink-500">{formatDate(change.createdAt)}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium text-ink-900">{formatPrice(change.price)}</span>
-                        {diff !== 0 && (
-                          <span className={diff < 0 ? "text-xs text-emerald-600" : "text-xs text-red-600"}>
-                            {diff < 0 ? "↓" : "↑"} {formatPrice(Math.abs(diff))}
-                          </span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
+                {vehicle.priceChanges.map((change) => (
+                  <li key={change.id} className="flex items-center justify-between gap-2">
+                    <span className="text-ink-500">{formatDate(change.createdAt)}</span>
+                    <span className="font-medium text-ink-900">{formatPrice(change.price)}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           )}
