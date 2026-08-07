@@ -21,7 +21,7 @@ function HistoryRows({ stats }: { stats: HistoryStat[] }) {
       <thead className="border-b border-ink-100 text-ink-500">
         <tr>
           <th className="py-2 pr-4 font-medium">Semaine</th>
-          <th className="py-2 pr-4 font-medium">Vues</th>
+          <th className="py-2 pr-4 font-medium">Apparitions</th>
           <th className="py-2 pr-4 font-medium">Contacts</th>
           <th className="py-2 pr-4 font-medium">Appels</th>
           <th className="py-2 pr-4 font-medium">Favoris</th>

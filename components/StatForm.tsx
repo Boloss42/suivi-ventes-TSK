@@ -22,7 +22,7 @@ function SubmitButton({ label }: { label: string }) {
 }
 
 const COUNTER_FIELDS: { name: string; label: string }[] = [
-  { name: "views", label: "Vues de l'annonce" },
+  { name: "views", label: "Apparitions de l'annonce" },
   { name: "contacts", label: "Contacts / messages" },
   { name: "calls", label: "Appels téléphoniques" },
   { name: "favorites", label: "Mises en favori" },

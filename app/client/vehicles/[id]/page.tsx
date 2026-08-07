@@ -5,7 +5,7 @@ import { requireClient } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDate, formatPrice, formatMileage } from "@/lib/format";
 import { formatWeekShort } from "@/lib/week";
-import StatsChart, { type ChartPoint } from "@/components/client/StatsChart";
+import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailChart";
 import HistoryTable from "@/components/client/HistoryTable";
 import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 
@@ -35,14 +35,14 @@ export default async function ClientVehicleDetailPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const chartData: ChartPoint[] = vehicle.weeklyStats.map((s) => ({
+  const chartData: StatPoint[] = vehicle.weeklyStats.map((s) => ({
     week: formatWeekShort(s.weekStart),
-    Vues: s.views,
-    Contacts: s.contacts,
-    Appels: s.calls,
-    Favoris: s.favorites,
-    Visites: s.visits,
-    Offres: s.offers,
+    views: s.views,
+    contacts: s.contacts,
+    calls: s.calls,
+    favorites: s.favorites,
+    visits: s.visits,
+    offers: s.offers,
   }));
 
   const latestStat = vehicle.weeklyStats.at(-1);
@@ -123,30 +123,18 @@ export default async function ClientVehicleDetailPage({
         </div>
 
         <div className="min-w-0 space-y-6">
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-            <StatTile label="Vues" value={latestStat?.views} />
-            <StatTile label="Contacts" value={latestStat?.contacts} />
-            <StatTile label="Appels" value={latestStat?.calls} />
-            <StatTile label="Favoris" value={latestStat?.favorites} />
-            <StatTile label="Visites" value={latestStat?.visits} />
-            <StatTile label="Offres" value={latestStat?.offers} />
-          </div>
-
-          <div className="rounded-lg border border-ink-100 bg-white p-6">
-            <h2 className="mb-1 text-sm font-semibold text-ink-800">Évolution des statistiques</h2>
-            <p className="mb-4 text-sm text-ink-500">
-              {latestStat
-                ? `Dernier relevé : ${formatDate(latestStat.weekStart)}`
-                : "Aucun relevé saisi pour le moment."}
-            </p>
-            {chartData.length > 0 ? (
-              <StatsChart data={chartData} />
-            ) : (
-              <p className="py-12 text-center text-sm text-ink-400">
-                Les statistiques apparaîtront ici dès le premier relevé hebdomadaire.
-              </p>
-            )}
-          </div>
+          <StatDetailChart
+            data={chartData}
+            latestValues={{
+              views: latestStat?.views,
+              contacts: latestStat?.contacts,
+              calls: latestStat?.calls,
+              favorites: latestStat?.favorites,
+              visits: latestStat?.visits,
+              offers: latestStat?.offers,
+            }}
+            latestWeekLabel={latestStat ? formatDate(latestStat.weekStart) : null}
+          />
 
           {historyDesc.length > 0 && (
             <HistoryTable
@@ -174,15 +162,6 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between gap-2">
       <dt className="text-ink-500">{label}</dt>
       <dd className="font-medium text-ink-900">{value}</dd>
-    </div>
-  );
-}
-
-function StatTile({ label, value }: { label: string; value?: number }) {
-  return (
-    <div className="rounded-lg border border-ink-100 bg-white p-3 text-center">
-      <p className="text-lg font-semibold text-ink-900">{value ?? "—"}</p>
-      <p className="text-xs text-ink-500">{label}</p>
     </div>
   );
 }
