@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 
-// Inter était déclarée dans le thème mais jamais chargée : on l'importe pour de
-// bon (variable CSS reprise par --font-sans dans globals.css).
+// Inter pour le corps de texte (lisibilité des tableaux / formulaires).
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+});
+
+// Sora : sans-serif géométrique pour les titres — reprend l'esprit de la
+// charte du site vitrine Transakauto.
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-sora",
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -21,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={inter.variable}>
+    <html lang="fr" className={`${inter.variable} ${sora.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

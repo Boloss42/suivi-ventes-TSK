@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-sora), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   /* Rose Transakauto — couleur de marque, exacte à #ec028c en position 500 */
   --color-brand-50: #fdf1f8;
@@ -15,28 +16,52 @@
   --color-brand-800: #700340;
   --color-brand-900: #450127;
 
-  /* Noir / gris neutres — texte, bordures, fonds */
-  --color-ink-50: #fafafa;
-  --color-ink-100: #f0f0f0;
-  --color-ink-200: #e0e0e0;
-  --color-ink-300: #c7c7c7;
-  --color-ink-400: #9a9a9a;
-  --color-ink-500: #6f6f6f;
-  --color-ink-600: #4a4a4a;
-  --color-ink-700: #2e2e2e;
-  --color-ink-800: #1a1a1a;
-  --color-ink-900: #0d0d0d;
+  /* Neutres — THÈME SOMBRE : la rampe est inversée par rapport à un thème
+     clair. ink-50 = surface la plus sombre … ink-900 = texte quasi blanc.
+     Ainsi les classes existantes (text-ink-900, bg-ink-50, border-ink-100…)
+     basculent automatiquement en sombre sans toucher aux composants. */
+  --color-ink-50: #0e0e12;
+  --color-ink-100: #1a1a21;
+  --color-ink-200: #2a2a33;
+  --color-ink-300: #40404b;
+  --color-ink-400: #6a6a76;
+  --color-ink-500: #9595a1;
+  --color-ink-600: #b7b7c1;
+  --color-ink-700: #d3d3da;
+  --color-ink-800: #e7e7ec;
+  --color-ink-900: #f6f6f9;
 }
 
 :root {
-  --background: #fafafa;
-  --foreground: #0d0d0d;
+  --background: #0a0a0d;
+  --foreground: #f6f6f9;
+  /* Surface des cartes (remplace bg-white) et son état survolé. */
+  --surface: #16161d;
+  --surface-hover: #1f1f28;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Titres en police display géométrique (charte Transakauto). */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Champs de saisie : texte clair sur fond sombre. */
+input,
+textarea,
+select {
+  color: var(--foreground);
+}
+::placeholder {
+  color: var(--color-ink-400);
 }
 
 /* Cache les flèches natives des champs numériques pour un rendu plus sobre */
@@ -93,7 +118,7 @@ input[type="number"] {
 }
 .card-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 28px -14px rgba(13, 13, 13, 0.22);
+  box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.65);
 }
 
 /* Retour tactile au clic sur les boutons/liens principaux. */
@@ -116,4 +141,102 @@ input[type="number"] {
   .press:active {
     transform: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Thème sombre — adaptation des utilitaires « clairs » de Tailwind.
+   La rampe `ink` est déjà inversée (voir @theme) : il reste à traiter les
+   surfaces blanches et les pastilles teintées (statuts, alertes) pour qu'elles
+   restent lisibles sur fond sombre. Sélecteurs préfixés par `html` pour
+   passer devant les utilitaires sans dépendre de l'ordre de déclaration.
+--------------------------------------------------------------------------- */
+
+/* Cartes : le blanc devient une surface sombre légèrement élevée. */
+html .bg-white {
+  background-color: var(--surface);
+}
+html .hover\:bg-white:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Vert — « En vente », bonnes chances de vente, succès. */
+html .bg-emerald-50 {
+  background-color: color-mix(in srgb, #10b981 15%, transparent);
+}
+html .text-emerald-700,
+html .text-emerald-800,
+html .text-emerald-600 {
+  color: #6ee7b7;
+}
+html .border-emerald-200 {
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+}
+
+/* Ambre — alertes, relevés manquants, propositions en attente. */
+html .bg-amber-50 {
+  background-color: color-mix(in srgb, #f59e0b 15%, transparent);
+}
+html .text-amber-700,
+html .text-amber-800 {
+  color: #fcd34d;
+}
+html .border-amber-200 {
+  border-color: color-mix(in srgb, #f59e0b 35%, transparent);
+}
+
+/* Rouge — suppression, prix trop élevé, erreurs. */
+html .bg-red-50 {
+  background-color: color-mix(in srgb, #ef4444 15%, transparent);
+}
+html .hover\:bg-red-50:hover {
+  background-color: color-mix(in srgb, #ef4444 18%, transparent);
+}
+html .text-red-600,
+html .text-red-700,
+html .hover\:text-red-600:hover {
+  color: #fca5a5;
+}
+html .border-red-200 {
+  border-color: color-mix(in srgb, #ef4444 35%, transparent);
+}
+
+/* Bleu — statut « Vendu ». */
+html .bg-blue-50 {
+  background-color: color-mix(in srgb, #3b82f6 15%, transparent);
+}
+html .text-blue-700 {
+  color: #93c5fd;
+}
+html .border-blue-200 {
+  border-color: color-mix(in srgb, #3b82f6 35%, transparent);
+}
+
+/* Gris — statuts « Retiré » / « Inactif ». */
+html .bg-gray-100 {
+  background-color: color-mix(in srgb, #94a3b8 15%, transparent);
+}
+html .text-gray-600 {
+  color: #cbd5e1;
+}
+html .border-gray-200 {
+  border-color: color-mix(in srgb, #94a3b8 30%, transparent);
+}
+
+/* Rose de marque — fonds teintés et textes/liens gardés lisibles sur sombre. */
+html .bg-brand-50 {
+  background-color: color-mix(in srgb, #ec028c 16%, transparent);
+}
+html .hover\:bg-brand-50:hover {
+  background-color: color-mix(in srgb, #ec028c 20%, transparent);
+}
+html .text-brand-700,
+html .text-brand-600 {
+  color: #f472b6;
+}
+html .hover\:text-brand-600:hover,
+html .hover\:text-brand-500:hover {
+  color: #f9a8d4;
+}
+html .hover\:border-brand-300:hover {
+  border-color: var(--color-brand-400);
 }
