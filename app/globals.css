@@ -3,7 +3,8 @@
 @theme {
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  /* Rose Transakauto — couleur de marque, exacte à #ec028c en position 500 */
+  /* Rose de marque — accent conservé (#ec028c en 500) sur le fond bleu-nuit
+     de la charte « Nocturne » : boutons, liens, logo, graphiques. */
   --color-brand-50: #fdf1f8;
   --color-brand-100: #fce4f0;
   --color-brand-200: #f9c9e2;
@@ -15,22 +16,27 @@
   --color-brand-800: #700340;
   --color-brand-900: #450127;
 
-  /* Noir / gris neutres — texte, bordures, fonds */
-  --color-ink-50: #fafafa;
-  --color-ink-100: #f0f0f0;
-  --color-ink-200: #e0e0e0;
-  --color-ink-300: #c7c7c7;
-  --color-ink-400: #9a9a9a;
-  --color-ink-500: #6f6f6f;
-  --color-ink-600: #4a4a4a;
-  --color-ink-700: #2e2e2e;
-  --color-ink-800: #1a1a1a;
-  --color-ink-900: #0d0d0d;
+  /* Neutres froids — THÈME SOMBRE : rampe inversée (ink-50 = surface la plus
+     sombre … ink-900 = texte quasi blanc). Les classes existantes basculent
+     automatiquement en sombre sans toucher aux composants. */
+  --color-ink-50: #161826;
+  --color-ink-100: #2b2e3c;
+  --color-ink-200: #3f424d;
+  --color-ink-300: #595d6c;
+  --color-ink-400: #75798c;
+  --color-ink-500: #9397ab;
+  --color-ink-600: #b2b6ca;
+  --color-ink-700: #cfd3e5;
+  --color-ink-800: #e4e7f5;
+  --color-ink-900: #e9e9ed;
 }
 
 :root {
-  --background: #fafafa;
-  --foreground: #0d0d0d;
+  --background: #161826;
+  --foreground: #e9e9ed;
+  /* Surface des cartes (remplace bg-white) et son état survolé. */
+  --surface: #232532;
+  --surface-hover: #2b2e3d;
 }
 
 body {
@@ -93,7 +99,7 @@ input[type="number"] {
 }
 .card-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 28px -14px rgba(13, 13, 13, 0.22);
+  box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.7);
 }
 
 /* Retour tactile au clic sur les boutons/liens principaux. */
@@ -116,4 +122,112 @@ input[type="number"] {
   .press:active {
     transform: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Charte « Nocturne » (maquette) — adaptation des utilitaires « clairs » de
+   Tailwind au thème sombre bleu-nuit. La rampe `ink` est déjà inversée
+   (voir @theme) ; il reste à traiter les surfaces blanches, les champs et les
+   pastilles teintées. Sélecteurs préfixés par `html` pour passer devant les
+   utilitaires sans dépendre de l'ordre de déclaration.
+--------------------------------------------------------------------------- */
+
+/* Texte des champs clair sur fond sombre. */
+input,
+textarea,
+select {
+  color: var(--foreground);
+}
+::placeholder {
+  color: var(--color-ink-400);
+}
+
+/* Cartes : le blanc devient la surface sombre de la charte (#232532). */
+html .bg-white {
+  background-color: var(--surface);
+}
+html .hover\:bg-white:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Vert — « En vente », bonnes chances de vente, succès. */
+html .bg-emerald-50 {
+  background-color: color-mix(in srgb, #10b981 15%, transparent);
+}
+html .text-emerald-700,
+html .text-emerald-800,
+html .text-emerald-600 {
+  color: #6ee7b7;
+}
+html .border-emerald-200 {
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+}
+
+/* Ambre — alertes, relevés manquants, propositions en attente. */
+html .bg-amber-50 {
+  background-color: color-mix(in srgb, #f59e0b 15%, transparent);
+}
+html .text-amber-700,
+html .text-amber-800 {
+  color: #fcd34d;
+}
+html .border-amber-200 {
+  border-color: color-mix(in srgb, #f59e0b 35%, transparent);
+}
+
+/* Rouge — suppression, prix trop élevé, erreurs. */
+html .bg-red-50 {
+  background-color: color-mix(in srgb, #ef4444 15%, transparent);
+}
+html .hover\:bg-red-50:hover {
+  background-color: color-mix(in srgb, #ef4444 18%, transparent);
+}
+html .text-red-600,
+html .text-red-700,
+html .hover\:text-red-600:hover {
+  color: #fca5a5;
+}
+html .border-red-200 {
+  border-color: color-mix(in srgb, #ef4444 35%, transparent);
+}
+
+/* Bleu — statut « Vendu ». */
+html .bg-blue-50 {
+  background-color: color-mix(in srgb, #3b82f6 15%, transparent);
+}
+html .text-blue-700 {
+  color: #93c5fd;
+}
+html .border-blue-200 {
+  border-color: color-mix(in srgb, #3b82f6 35%, transparent);
+}
+
+/* Gris — statuts « Retiré » / « Inactif ». */
+html .bg-gray-100 {
+  background-color: color-mix(in srgb, #94a3b8 15%, transparent);
+}
+html .text-gray-600 {
+  color: #cbd5e1;
+}
+html .border-gray-200 {
+  border-color: color-mix(in srgb, #94a3b8 30%, transparent);
+}
+
+/* Rose de marque — fonds teintés et textes/liens gardés lisibles sur sombre. */
+html .bg-brand-50 {
+  background-color: color-mix(in srgb, #ec028c 16%, transparent);
+}
+html .hover\:bg-brand-50:hover {
+  background-color: color-mix(in srgb, #ec028c 20%, transparent);
+}
+html .text-brand-700,
+html .text-brand-600 {
+  color: #f472b6;
+}
+html .hover\:text-brand-600:hover,
+html .hover\:text-brand-500:hover {
+  color: #f9a8d4;
+}
+html .hover\:border-brand-300:hover {
+  border-color: var(--color-brand-400);
 }
