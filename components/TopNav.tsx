@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { logout } from "@/lib/actions/auth";
+import Logo from "@/components/Logo";
 
 type NavItem = {
   href: string;
@@ -29,9 +30,12 @@ export default function TopNav({
           <div className="flex items-center gap-6">
             <Link
               href={homeHref}
-              className="shrink-0 whitespace-nowrap bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-base font-semibold text-transparent transition hover:opacity-80"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap transition hover:opacity-80"
             >
-              Mon suivi perso
+              <Logo className="h-8 w-8" />
+              <span className="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-base font-semibold text-transparent">
+                MyVitrine
+              </span>
             </Link>
             <nav className="hidden flex-wrap gap-1 lg:flex">
               {items.map((item) => (

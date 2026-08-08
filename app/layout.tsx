@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Mon suivi perso — Suivi des ventes",
+  title: "MyVitrine — Suivi des ventes",
   description: "Suivi des annonces et statistiques de vente de véhicules en dépôt-vente",
 };
 

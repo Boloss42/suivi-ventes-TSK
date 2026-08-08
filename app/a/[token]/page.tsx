@@ -2,6 +2,7 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatMileage } from "@/lib/format";
+import Logo from "@/components/Logo";
 
 // Page publique non authentifiée : à recalculer à chaque visite (compteur de
 // clics), jamais mise en cache.
@@ -50,8 +51,9 @@ export default async function PublicListingPage({
   return (
     <main className="min-h-screen bg-ink-50">
       <header className="border-b border-ink-100 bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6">
-          <span className="text-base font-semibold text-brand-500">Mon suivi perso</span>
+        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-4 sm:px-6">
+          <Logo className="h-8 w-8" />
+          <span className="text-base font-semibold text-brand-500">MyVitrine</span>
         </div>
       </header>
 

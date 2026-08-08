@@ -26,7 +26,7 @@ export async function activateAccount(
   const user = await prisma.user.findUnique({ where: { inviteToken: token } });
   if (!user || !user.inviteTokenExpiresAt || user.inviteTokenExpiresAt < new Date()) {
     return {
-      error: "Ce lien n'est plus valide. Contactez Mon suivi perso pour en recevoir un nouveau.",
+      error: "Ce lien n'est plus valide. Contactez MyVitrine pour en recevoir un nouveau.",
     };
   }
 
