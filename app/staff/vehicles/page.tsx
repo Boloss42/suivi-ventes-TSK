@@ -45,12 +45,20 @@ export default async function VehiclesPage({
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink-900">Véhicules</h1>
-        <Link
-          href="/staff/vehicles/new"
-          className="rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-600"
-        >
-          + Nouveau véhicule
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/staff/vehicles/bulk"
+            className="rounded-md border border-ink-200 px-4 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+          >
+            Ajout en masse
+          </Link>
+          <Link
+            href="/staff/vehicles/new"
+            className="rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-600"
+          >
+            + Nouveau véhicule
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4">

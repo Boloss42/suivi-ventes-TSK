@@ -51,6 +51,28 @@ export const vehicleSchema = z.object({
   listingUrls: z.array(listingUrlSchema).optional().default([]),
 });
 
+// Une ligne du formulaire d'ajout en masse. Contrairement au formulaire unitaire,
+// le client est ici toujours choisi par ligne (pas de création de client inline)
+// et il n'y a ni photos ni liens d'annonce (ajoutés ensuite par véhicule).
+export const bulkVehicleRowSchema = z.object({
+  clientId: z.string().min(1, "Client requis"),
+  make: z.string().min(1, "Marque requise"),
+  model: z.string().min(1, "Modèle requis"),
+  year: z.coerce.number().int().min(1900).max(2100),
+  mileage: z.coerce.number().int().min(0),
+  fuelType: z.string().min(1, "Motorisation requise"),
+  reference: z.string().min(1, "Immatriculation / référence requise"),
+  price: z.coerce.number().int().min(0),
+  advisedPrice: z.union([z.coerce.number().int().min(0), z.literal("")]).optional(),
+  status: z.enum(vehicleStatusValues).default("EN_VENTE"),
+  depositDate: z.string().min(1, "Date de mise en dépôt requise"),
+});
+
+export const bulkVehiclesSchema = z
+  .array(bulkVehicleRowSchema)
+  .min(1, "Ajoutez au moins un véhicule")
+  .max(50, "50 véhicules maximum par lot");
+
 export const activateSchema = z
   .object({
     password: z.string().min(8, "8 caractères minimum"),

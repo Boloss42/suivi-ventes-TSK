@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
-import { vehicleSchema, clientSchema } from "@/lib/validation";
+import { vehicleSchema, clientSchema, bulkVehiclesSchema } from "@/lib/validation";
 import { saveVehiclePhoto, deleteVehiclePhotoFile } from "@/lib/storage";
 import { generateTempPassword, hashPassword } from "@/lib/password";
 import { generateInviteToken, inviteExpiresAt, buildInviteUrl, generateQrSvg } from "@/lib/invite";
@@ -187,6 +187,125 @@ export async function createVehicle(
   }
 
   redirect(`/staff/vehicles/${vehicle.id}`);
+}
+
+export type BulkVehicleActionState = {
+  error?: string;
+  /** Erreurs rattachées à l'index de la ligne concernée (pour surlignage côté UI). */
+  rowErrors?: { index: number; message: string }[];
+  success?: { created: number };
+};
+
+/**
+ * Ajout de plusieurs véhicules en une fois (formulaire multi-lignes staff).
+ * Chaque ligne porte son propre client. Création atomique (tout ou rien) :
+ * si une seule ligne est invalide, aucune n'est créée et les erreurs sont
+ * renvoyées par index de ligne. Pas de photos ni de liens ici (ajoutés
+ * ensuite par véhicule).
+ */
+export async function createVehiclesBulk(
+  _prevState: BulkVehicleActionState,
+  formData: FormData,
+): Promise<BulkVehicleActionState> {
+  const { agencyId, userId } = await requireStaff();
+
+  const raw = formData.get("rows");
+  if (typeof raw !== "string") {
+    return { error: "Données du formulaire invalides." };
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return { error: "Données du formulaire invalides." };
+  }
+
+  const parsed = bulkVehiclesSchema.safeParse(payload);
+  if (!parsed.success) {
+    const rowErrors = parsed.error.issues.map((issue) => ({
+      index: typeof issue.path[0] === "number" ? issue.path[0] : -1,
+      message: issue.message,
+    }));
+    return { error: "Certaines lignes sont incomplètes ou invalides.", rowErrors };
+  }
+
+  const rows = parsed.data;
+  const rowErrors: { index: number; message: string }[] = [];
+
+  // 1. Doublons de référence à l'intérieur du lot (comparaison tolérante).
+  const seen = new Map<string, number>();
+  rows.forEach((row, i) => {
+    const key = row.reference.trim().toLowerCase();
+    if (seen.has(key)) {
+      rowErrors.push({
+        index: i,
+        message: `Référence « ${row.reference} » en double dans le lot.`,
+      });
+    } else {
+      seen.set(key, i);
+    }
+  });
+
+  // 2. Isolation : chaque client doit appartenir à cette agence ET à cet agent.
+  const clientIds = [...new Set(rows.map((r) => r.clientId))];
+  const clients = await prisma.client.findMany({
+    where: { id: { in: clientIds }, agencyId, assignedStaffId: userId },
+    select: { id: true },
+  });
+  const allowedClientIds = new Set(clients.map((c) => c.id));
+  rows.forEach((row, i) => {
+    if (!allowedClientIds.has(row.clientId)) {
+      rowErrors.push({ index: i, message: "Client introuvable ou non autorisé." });
+    }
+  });
+
+  // 3. Références déjà présentes en base pour cette agence.
+  const existing = await prisma.vehicle.findMany({
+    where: { agencyId, reference: { in: rows.map((r) => r.reference) } },
+    select: { reference: true },
+  });
+  const existingRefs = new Set(existing.map((e) => e.reference));
+  rows.forEach((row, i) => {
+    if (existingRefs.has(row.reference)) {
+      rowErrors.push({
+        index: i,
+        message: `Référence « ${row.reference} » déjà utilisée.`,
+      });
+    }
+  });
+
+  if (rowErrors.length > 0) {
+    return { error: "Corrigez les lignes signalées puis réessayez.", rowErrors };
+  }
+
+  // Création atomique : tout ou rien.
+  await prisma.$transaction(
+    rows.map((row) =>
+      prisma.vehicle.create({
+        data: {
+          agencyId,
+          clientId: row.clientId,
+          make: row.make,
+          model: row.model,
+          year: row.year,
+          mileage: row.mileage,
+          fuelType: row.fuelType,
+          reference: row.reference,
+          price: row.price,
+          advisedPrice: typeof row.advisedPrice === "number" ? row.advisedPrice : null,
+          status: row.status,
+          depositDate: new Date(row.depositDate),
+          priceChanges: { create: { price: row.price } },
+        },
+      }),
+    ),
+  );
+
+  revalidatePath("/staff/vehicles");
+  revalidatePath("/staff/clients");
+
+  return { success: { created: rows.length } };
 }
 
 export async function updateVehicle(
