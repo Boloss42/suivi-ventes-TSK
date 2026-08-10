@@ -7,6 +7,7 @@ import { requireStaff } from "@/lib/session";
 import { clientSchema } from "@/lib/validation";
 import { generateTempPassword, hashPassword } from "@/lib/password";
 import { generateInviteToken, inviteExpiresAt, buildInviteUrl, generateQrSvg } from "@/lib/invite";
+import { sendActivationEmail } from "@/lib/emails/activation";
 
 export type ClientActionState = {
   error?: string;
@@ -70,6 +71,18 @@ export async function createClient(
 
   const inviteUrl = await buildInviteUrl(inviteToken);
   const qrSvg = await generateQrSvg(inviteUrl);
+
+  // Envoi de l'email d'activation (non bloquant : en cas d'échec, l'agent
+  // conserve le lien et le QR ci-dessous pour un partage manuel).
+  const advisor = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true },
+  });
+  await sendActivationEmail(email, {
+    firstName: parsed.data.firstName,
+    inviteUrl,
+    advisorName: advisor?.firstName,
+  });
 
   return {
     success: { clientId: client.id, email, inviteUrl, qrSvg },
@@ -142,6 +155,7 @@ export async function regenerateInviteLink(
 
   const client = await prisma.client.findFirst({
     where: { id: clientId, agencyId, assignedStaffId: userId },
+    include: { user: { select: { email: true } } },
   });
   if (!client) {
     return { error: "Client introuvable." };
@@ -158,6 +172,17 @@ export async function regenerateInviteLink(
 
   const inviteUrl = await buildInviteUrl(inviteToken);
   const qrSvg = await generateQrSvg(inviteUrl);
+
+  // Renvoi de l'email d'activation (non bloquant).
+  const advisor = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true },
+  });
+  await sendActivationEmail(client.user.email, {
+    firstName: client.firstName,
+    inviteUrl,
+    advisorName: advisor?.firstName,
+  });
 
   return { inviteUrl, qrSvg };
 }
