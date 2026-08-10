@@ -46,6 +46,27 @@ cp .env.example .env
 
 ## Base de données
 
+### ⚠️ Séparation dev / prod (à respecter absolument)
+
+Le développement local et la production utilisent **deux bases Neon distinctes** :
+
+| Environnement | Où est définie `DATABASE_URL` | Branche Neon |
+| --- | --- | --- |
+| **Local / dev** | fichier `.env` (jamais committé) | branche `dev` (endpoint `ep-dawn-leaf-…`) |
+| **Production** | variables d'environnement **Railway** | branche prod (endpoint `ep-super-fog-…`) |
+
+- Le `.env` local **ne doit jamais** contenir l'URL de prod. Toute commande
+  destructive (`prisma migrate reset`, seed, scripts `.mjs`) exécutée en local
+  n'affecte alors **que** la branche dev.
+- La branche `dev` est une copie isolée : ce qu'on y écrit ne remonte jamais en
+  prod. Pour la créer/rafraîchir : Neon → *Branches* → *New Branch* (parent =
+  prod), puis copier sa *connection string* (pooled) dans `.env`.
+- La prod garde sa propre `DATABASE_URL` dans Railway ; ne pas la remettre en
+  local. Après avoir partagé une URL Neon, penser à régénérer le mot de passe
+  du rôle (`neondb_owner`) côté Neon.
+
+### Migrations & seed
+
 Appliquer les migrations :
 
 ```bash
