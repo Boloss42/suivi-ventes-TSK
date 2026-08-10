@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
     // c'est ce qui empêchait les photos de s'afficher en production).
     // Sans impact réel ici : les photos de véhicules ne sont pas énormes.
     unoptimized: true,
+    // Autorise les photos servies depuis le stockage objet Cloudflare R2
+    // (sous-domaine public *.r2.dev, ou un domaine perso R2 le cas échéant).
+    remotePatterns: [{ protocol: "https", hostname: "**.r2.dev" }],
   },
   experimental: {
     // Les Server Actions reçoivent aussi les photos de véhicules (multipart),

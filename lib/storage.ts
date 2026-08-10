@@ -1,8 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile, unlink } from "fs/promises";
-import path from "path";
-
-const UPLOADS_ROOT = path.join(process.cwd(), "public", "uploads", "vehicles");
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -11,28 +8,77 @@ const ALLOWED_TYPES: Record<string, string> = {
 };
 
 /**
- * Stockage des photos sur disque local (suffisant pour un déploiement simple
- * à un seul serveur). À remplacer par un stockage objet (S3, Cloudinary...)
- * si l'app est déployée sur une infra multi-instance/serverless.
+ * Stockage des photos de véhicules sur un stockage objet compatible S3
+ * (Cloudflare R2). Persistant (contrairement au disque local de Railway qui
+ * est éphémère). Les objets sont rangés sous une clé non devinable
+ * `vehicles/<vehicleId>/<uuid>.<ext>` et servis publiquement via le
+ * sous-domaine R2 public (R2_PUBLIC_URL). Aucune donnée client sensible n'est
+ * exposée : seule la photo de l'annonce, à une URL non énumérable.
  */
-export async function saveVehiclePhoto(vehicleId: string, file: File) {
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Variable d'environnement ${name} manquante : le stockage des photos (R2) n'est pas configuré.`,
+    );
+  }
+  return value;
+}
+
+// Client S3 créé paresseusement (au premier upload/suppression) pour ne pas
+// échouer au build si les variables ne sont pas présentes.
+let cachedClient: S3Client | null = null;
+function getClient(): S3Client {
+  if (cachedClient) return cachedClient;
+  const accountId = requireEnv("R2_ACCOUNT_ID");
+  cachedClient = new S3Client({
+    region: "auto",
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
+      secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
+    },
+  });
+  return cachedClient;
+}
+
+function publicBaseUrl(): string {
+  return requireEnv("R2_PUBLIC_URL").replace(/\/$/, "");
+}
+
+export async function saveVehiclePhoto(vehicleId: string, file: File): Promise<string> {
   const extension = ALLOWED_TYPES[file.type];
   if (!extension) {
     throw new Error("Format d'image non supporté (JPEG, PNG ou WebP uniquement).");
   }
 
-  const dir = path.join(UPLOADS_ROOT, vehicleId);
-  await mkdir(dir, { recursive: true });
-
-  const filename = `${randomUUID()}.${extension}`;
+  const key = `vehicles/${vehicleId}/${randomUUID()}.${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
 
-  return `/uploads/vehicles/${vehicleId}/${filename}`;
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: requireEnv("R2_BUCKET_NAME"),
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+    }),
+  );
+
+  return `${publicBaseUrl()}/${key}`;
 }
 
-export async function deleteVehiclePhotoFile(url: string) {
-  if (!url.startsWith("/uploads/vehicles/")) return;
-  const filePath = path.join(process.cwd(), "public", url);
-  await unlink(filePath).catch(() => {});
+export async function deleteVehiclePhotoFile(url: string): Promise<void> {
+  const base = `${publicBaseUrl()}/`;
+  // On ne supprime que les objets réellement stockés sur notre bucket R2.
+  // Les anciennes URLs locales (/uploads/...) sont ignorées (fichiers déjà
+  // perdus sur le FS éphémère) pour ne pas bloquer une suppression de véhicule.
+  if (!url.startsWith(base)) return;
+
+  const key = url.slice(base.length);
+  if (!key) return;
+
+  await getClient()
+    .send(new DeleteObjectCommand({ Bucket: requireEnv("R2_BUCKET_NAME"), Key: key }))
+    .catch(() => {});
 }
