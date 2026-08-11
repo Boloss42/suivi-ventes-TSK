@@ -32,6 +32,7 @@ export default async function ClientVehicleDetailPage({
       listingUrls: true,
       weeklyStats: { orderBy: { weekStart: "asc" } },
       priceChanges: { orderBy: { createdAt: "desc" } },
+      priceSuggestions: { orderBy: { createdAt: "desc" } },
       offers: { orderBy: { createdAt: "desc" } },
       _count: { select: { shareClicks: true } },
     },
@@ -136,6 +137,32 @@ export default async function ClientVehicleDetailPage({
       title: "Proposition de baisse",
       detail: `${formatPrice(proposal.proposedPrice)} — ${statusLabel}`,
       tone: proposal.status === "PENDING" ? "warning" : "neutral",
+    });
+  }
+  // Baisses de prix recommandées par le conseiller (staff → client).
+  for (const suggestion of vehicle.priceSuggestions) {
+    rawEvents.push({
+      at: suggestion.createdAt,
+      title: "Baisse recommandée par votre conseiller",
+      detail: formatPrice(suggestion.amount),
+      tone: "brand",
+    });
+  }
+  // Offres d'achat reçues (datées dans l'historique).
+  for (const offer of vehicle.offers) {
+    const statusLabel =
+      offer.status === "ACCEPTED"
+        ? "acceptée"
+        : offer.status === "REJECTED"
+          ? "déclinée"
+          : offer.status === "COUNTERED"
+            ? "en négociation"
+            : "nouvelle";
+    rawEvents.push({
+      at: offer.createdAt,
+      title: "Offre reçue",
+      detail: `${formatPrice(offer.amount)} — ${statusLabel}`,
+      tone: offer.status === "ACCEPTED" ? "good" : "neutral",
     });
   }
   // Pic d'activité : plus fort GAIN de vues sur une semaine (relevé − relevé

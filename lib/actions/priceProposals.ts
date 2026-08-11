@@ -159,15 +159,25 @@ export async function suggestPriceDropToClient(
   const base = `Au prix actuel, votre ${vehicleLabel} ne trouve pas preneur. Pour qu'il se vende, votre conseiller recommande d'ajuster le prix à ${suggestedPrice}. Contactez-le pour en parler.`;
   const message = parsed.data.message ? `${base} « ${parsed.data.message} »` : base;
 
-  // Notification in-app (cloche client).
-  await prisma.notification.create({
-    data: {
-      clientId: vehicle.clientId,
-      vehicleId: vehicle.id,
-      type: "PRICE_PROPOSAL",
-      message,
-    },
-  });
+  // Historisation de la recommandation (staff → client) + notification in-app
+  // (cloche client), dans une transaction pour rester cohérent.
+  await prisma.$transaction([
+    prisma.priceSuggestion.create({
+      data: {
+        vehicleId: vehicle.id,
+        amount: parsed.data.proposedPrice,
+        message: parsed.data.message,
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        clientId: vehicle.clientId,
+        vehicleId: vehicle.id,
+        type: "PRICE_PROPOSAL",
+        message,
+      },
+    }),
+  ]);
 
   // Email (non bloquant : l'échec n'empêche pas la notification in-app).
   const h = await headers();

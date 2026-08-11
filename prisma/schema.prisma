@@ -114,12 +114,13 @@ model Vehicle {
   photos         Photo[]
   weeklyStats    WeeklyStat[]
   notifications  Notification[]
-  priceProposals PriceProposal[]
-  priceChanges   PriceChange[]
-  shareClicks    ShareClick[]
-  offers         Offer[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  priceProposals   PriceProposal[]
+  priceSuggestions PriceSuggestion[]
+  priceChanges     PriceChange[]
+  shareClicks      ShareClick[]
+  offers           Offer[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@unique([agencyId, reference])
   @@index([clientId])
@@ -222,6 +223,20 @@ enum ProposalStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+
+// Baisse de prix RECOMMANDÉE par l'agent à son client (staff → client),
+// historisée pour tracer dans le temps les recommandations envoyées. À ne pas
+// confondre avec PriceProposal (client → staff). `amount` = prix recommandé.
+model PriceSuggestion {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  amount    Int
+  message   String?
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId])
 }
 
 // Proposition d'ajustement de prix soumise par un client, à valider par le staff.

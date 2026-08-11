@@ -31,6 +31,7 @@ export default async function VehicleDetailPage({
       listingUrls: true,
       weeklyStats: { orderBy: { weekStart: "desc" } },
       priceChanges: { orderBy: { createdAt: "desc" } },
+      priceSuggestions: { orderBy: { createdAt: "desc" } },
       offers: { orderBy: { createdAt: "desc" } },
       _count: { select: { shareClicks: true } },
     },
@@ -246,6 +247,31 @@ export default async function VehicleDetailPage({
                         {proposal.respondedAt ? ` le ${formatDate(proposal.respondedAt)}` : ""}
                       </p>
                     )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {vehicle.priceSuggestions.length > 0 && (
+            <div className="rounded-lg border border-ink-100 bg-white p-6">
+              <h2 className="mb-3 text-sm font-semibold text-ink-800">
+                Baisses de prix recommandées ({vehicle.priceSuggestions.length})
+              </h2>
+              <p className="mb-3 text-xs text-ink-500">
+                Recommandations de baisse envoyées au client, de la plus récente à la
+                plus ancienne.
+              </p>
+              <ul className="space-y-2">
+                {vehicle.priceSuggestions.map((s) => (
+                  <li key={s.id} className="rounded-md border border-ink-100 bg-ink-50 px-3 py-2 text-sm">
+                    <p className="font-medium text-ink-900">
+                      {formatPrice(s.amount)}
+                      <span className="ml-2 text-xs font-normal text-ink-500">
+                        {formatDate(s.createdAt)}
+                      </span>
+                    </p>
+                    {s.message && <p className="mt-1 text-ink-600">« {s.message} »</p>}
                   </li>
                 ))}
               </ul>
