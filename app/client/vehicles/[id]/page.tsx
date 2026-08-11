@@ -12,7 +12,7 @@ import HistoryTable from "@/components/client/HistoryTable";
 import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 import SharePanel from "@/components/client/SharePanel";
 import AccelerateSaleModal from "@/components/client/AccelerateSaleModal";
-import SaleSummary, { type SummaryMetric } from "@/components/client/SaleSummary";
+import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
 import SaleEstimate from "@/components/client/SaleEstimate";
 import ActivityTimeline, { type TimelineEvent, type TimelineTone } from "@/components/client/ActivityTimeline";
 import { estimateSaleTime } from "@/lib/saleEstimate";

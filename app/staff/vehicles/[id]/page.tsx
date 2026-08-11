@@ -10,6 +10,7 @@ import { currentWeekStart, formatWeekLabel } from "@/lib/week";
 import { analyzeVehicle } from "@/lib/diagnostic";
 import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 import DeleteStatButton from "@/components/DeleteStatButton";
+import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
 
 export default async function VehicleDetailPage({
   params,
@@ -58,6 +59,31 @@ export default async function VehicleDetailPage({
     (s) => s.weekStart.getTime() === thisWeek.getTime(),
   );
 
+  // Synthèse cumulée + évolution de la dernière semaine (relevés triés du plus
+  // récent au plus ancien côté staff : dernier = [0], précédent = [1]).
+  const totals = vehicle.weeklyStats.reduce(
+    (a, s) => ({
+      views: a.views + s.views,
+      contacts: a.contacts + s.contacts,
+      calls: a.calls + s.calls,
+      favorites: a.favorites + s.favorites,
+      visits: a.visits + s.visits,
+      offers: a.offers + s.offers,
+    }),
+    { views: 0, contacts: 0, calls: 0, favorites: 0, visits: 0, offers: 0 },
+  );
+  const lastWeek = vehicle.weeklyStats[0];
+  const prevWeek = vehicle.weeklyStats[1];
+  const summaryMetrics: SummaryMetric[] = [
+    { label: "Vues", total: totals.views, week: lastWeek?.views ?? null, prevWeek: prevWeek?.views ?? null },
+    { label: "Contacts", total: totals.contacts, week: lastWeek?.contacts ?? null, prevWeek: prevWeek?.contacts ?? null },
+    { label: "Appels", total: totals.calls, week: lastWeek?.calls ?? null, prevWeek: prevWeek?.calls ?? null },
+    { label: "Favoris", total: totals.favorites, week: lastWeek?.favorites ?? null, prevWeek: prevWeek?.favorites ?? null },
+    { label: "Visites", total: totals.visits, week: lastWeek?.visits ?? null, prevWeek: prevWeek?.visits ?? null, highlight: true },
+    { label: "Offres", total: totals.offers, week: lastWeek?.offers ?? null, prevWeek: prevWeek?.offers ?? null, highlight: true },
+  ];
+  const daysOnline = daysSince(vehicle.depositDate);
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -99,6 +125,12 @@ export default async function VehicleDetailPage({
       {vehicle.status === "EN_VENTE" && !hasThisWeekStat && (
         <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Aucun relevé saisi pour {formatWeekLabel(thisWeek).toLowerCase()}.
+        </div>
+      )}
+
+      {vehicle.weeklyStats.length > 0 && (
+        <div className="mb-6">
+          <SaleSummary daysOnline={daysOnline} metrics={summaryMetrics} />
         </div>
       )}
 
