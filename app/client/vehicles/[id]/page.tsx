@@ -8,7 +8,6 @@ import { formatDate, formatPrice, formatMileage, formatMandateAge, daysSince } f
 import { formatWeekShort } from "@/lib/week";
 import { analyzeVehicle } from "@/lib/diagnostic";
 import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailChart";
-import HistoryTable from "@/components/client/HistoryTable";
 import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 import SharePanel from "@/components/client/SharePanel";
 import AccelerateSaleModal from "@/components/client/AccelerateSaleModal";
@@ -59,7 +58,6 @@ export default async function ClientVehicleDetailPage({
   }));
 
   const latestStat = vehicle.weeklyStats.at(-1);
-  const historyDesc = [...vehicle.weeklyStats].reverse();
 
   const diagnostic = analyzeVehicle(
     latestStat
@@ -327,24 +325,6 @@ export default async function ClientVehicleDetailPage({
               latestWeekLabel={latestStat ? formatDate(latestStat.weekStart) : null}
             />
           </div>
-
-          {historyDesc.length > 0 && (
-            <div className="order-4 lg:order-none">
-              <HistoryTable
-                stats={historyDesc.map((stat) => ({
-                  id: stat.id,
-                  weekStart: stat.weekStart.toISOString(),
-                  views: stat.views,
-                  contacts: stat.contacts,
-                  calls: stat.calls,
-                  favorites: stat.favorites,
-                  visits: stat.visits,
-                  offers: stat.offers,
-                  note: stat.note,
-                }))}
-              />
-            </div>
-          )}
 
           {timelineEvents.length > 0 && (
             <div className="order-11 lg:order-none">
