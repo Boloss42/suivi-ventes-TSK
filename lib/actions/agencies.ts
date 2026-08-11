@@ -7,6 +7,7 @@ import { requireSuperAdmin } from "@/lib/session";
 import { agencySchema, staffAccountSchema } from "@/lib/validation";
 import { generateTempPassword, hashPassword } from "@/lib/password";
 import { generateInviteToken, inviteExpiresAt, buildInviteUrl, generateQrSvg } from "@/lib/invite";
+import { sendActivationEmail } from "@/lib/emails/activation";
 
 export type AgencyActionState = { error?: string };
 
@@ -114,6 +115,10 @@ export async function createAgencyStaffAccount(
   const inviteUrl = await buildInviteUrl(inviteToken);
   const qrSvg = await generateQrSvg(inviteUrl);
 
+  // Envoi de l'email d'activation à l'agent (non bloquant : en cas d'échec, le
+  // super-admin conserve le lien et le QR ci-dessous pour un partage manuel).
+  await sendActivationEmail(email, { inviteUrl, audience: "staff" });
+
   return { success: { email, inviteUrl, qrSvg } };
 }
 
@@ -143,6 +148,13 @@ export async function regenerateAgencyStaffInviteLink(
 
   const inviteUrl = await buildInviteUrl(inviteToken);
   const qrSvg = await generateQrSvg(inviteUrl);
+
+  // Renvoi de l'email d'activation à l'agent (non bloquant).
+  await sendActivationEmail(user.email, {
+    firstName: user.firstName,
+    inviteUrl,
+    audience: "staff",
+  });
 
   return { inviteUrl, qrSvg };
 }

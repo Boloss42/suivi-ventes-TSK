@@ -10,9 +10,13 @@ const BRAND = "MyVitrine";
 const ACCENT = "#ec028c";
 
 type ActivationEmailParams = {
-  firstName: string;
+  // Facultatif : les comptes agents n'ont pas de prénom à la création.
+  firstName?: string | null;
   inviteUrl: string;
   advisorName?: string | null;
+  // « client » (propriétaire du véhicule) ou « staff » (agent de l'agence).
+  // Adapte le texte : un agent ne suit pas « son véhicule ».
+  audience?: "client" | "staff";
 };
 
 export function buildActivationEmail(params: ActivationEmailParams): {
@@ -20,14 +24,26 @@ export function buildActivationEmail(params: ActivationEmailParams): {
   html: string;
   text: string;
 } {
-  const { firstName, inviteUrl, advisorName } = params;
-  const subject = `${BRAND} — activez votre espace de suivi`;
-  const signature = advisorName ? `Votre conseiller, ${advisorName}` : `L'équipe ${BRAND}`;
+  const { firstName, inviteUrl, advisorName, audience = "client" } = params;
+  const isStaff = audience === "staff";
+  const subject = isStaff
+    ? `${BRAND} — activez votre compte agent`
+    : `${BRAND} — activez votre espace de suivi`;
+  const greeting = firstName ? `Bonjour ${firstName},` : "Bonjour,";
+  const intro = isStaff
+    ? `Votre compte agent ${BRAND} est prêt. Il vous permet de suivre les annonces de vos clients, leurs statistiques et vos échanges.`
+    : `Votre espace ${BRAND} est prêt. Il vous permet de suivre en temps réel la mise en vente de votre véhicule.`;
+  // Un agent n'a pas de « conseiller » : signature générique.
+  const signature =
+    !isStaff && advisorName ? `Votre conseiller, ${advisorName}` : `L'équipe ${BRAND}`;
+  const footer = isStaff
+    ? `Vous recevez cet email car un compte agent a été créé pour vous sur ${BRAND}.`
+    : `Vous recevez cet email car un espace de suivi a été créé pour vous sur ${BRAND}.`;
 
   const text = [
-    `Bonjour ${firstName},`,
+    greeting,
     ``,
-    `Votre espace ${BRAND} est prêt. Il vous permet de suivre en temps réel la mise en vente de votre véhicule.`,
+    intro,
     ``,
     `Activez votre compte et choisissez votre mot de passe ici :`,
     inviteUrl,
@@ -51,11 +67,9 @@ export function buildActivationEmail(params: ActivationEmailParams): {
             </tr>
             <tr>
               <td style="padding:32px;">
-                <p style="margin:0 0 16px;font-size:16px;">Bonjour ${escapeHtml(firstName)},</p>
+                <p style="margin:0 0 16px;font-size:16px;">${escapeHtml(greeting)}</p>
                 <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#33344a;">
-                  Votre espace ${BRAND} est prêt. Il vous permet de suivre en temps réel
-                  la mise en vente de votre véhicule : statistiques, prix conseillé et
-                  échanges avec votre conseiller.
+                  ${escapeHtml(intro)}
                 </p>
                 <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#33344a;">
                   Activez votre compte et choisissez votre mot de passe :
@@ -78,7 +92,7 @@ export function buildActivationEmail(params: ActivationEmailParams): {
             </tr>
             <tr>
               <td style="padding:16px 32px;background:#fafafc;border-top:1px solid #ececf1;">
-                <p style="margin:0;font-size:12px;color:#9a9bad;">Vous recevez cet email car un espace de suivi a été créé pour vous sur ${BRAND}.</p>
+                <p style="margin:0;font-size:12px;color:#9a9bad;">${escapeHtml(footer)}</p>
               </td>
             </tr>
           </table>

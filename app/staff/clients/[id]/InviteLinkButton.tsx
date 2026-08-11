@@ -13,7 +13,7 @@ function SubmitButton() {
       disabled={pending}
       className="rounded-md border border-ink-200 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:bg-ink-50 disabled:opacity-60"
     >
-      {pending ? "Génération..." : "Générer un lien d'activation"}
+      {pending ? "Envoi..." : "Renvoyer l'email d'activation"}
     </button>
   );
 }

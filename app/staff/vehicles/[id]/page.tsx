@@ -123,7 +123,10 @@ export default async function VehicleDetailPage({
               {vehicle.make} {vehicle.model} ({vehicle.year})
             </h1>
             <StatusBadge status={vehicle.status} />
-            {vehicle.status === "EN_VENTE" && (
+            {/* Repli : le bandeau de synthèse porte déjà « En ligne depuis » dès
+                qu'il y a un relevé. On n'affiche ce badge que sans relevé, pour
+                garder une seule mention. */}
+            {vehicle.status === "EN_VENTE" && vehicle.weeklyStats.length === 0 && (
               <span className="rounded-full bg-ink-100 px-2.5 py-0.5 text-xs font-medium text-ink-600">
                 En ligne depuis {formatMandateAge(vehicle.depositDate)}
               </span>

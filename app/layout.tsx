@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -13,6 +13,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "MyVitrine — Suivi des ventes",
   description: "Suivi des annonces et statistiques de vente de véhicules en dépôt-vente",
+};
+
+// Échelle 1 sur mobile : sans ça, la page peut s'afficher dézoomée et devenir
+// illisible. `initialScale: 1` + inputs ≥ 16px (voir formulaires) évitent aussi
+// le zoom automatique d'iOS au focus des champs.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
