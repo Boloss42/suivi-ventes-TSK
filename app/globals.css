@@ -80,9 +80,39 @@ input[type="number"] {
   }
 }
 
+/* Feuille qui monte depuis le bas (bottom sheet mobile). */
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fondu de l'overlay d'une modale. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Apparition en fondu + léger glissement vers le haut. */
 .animate-rise {
   animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Ouverture d'un bottom sheet (mobile) et fondu d'overlay. */
+.animate-sheet {
+  animation: sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade {
+  animation: fade-in 0.2s ease both;
 }
 
 /* Barre de progression qui se remplit au chargement (jauge de vendabilité). */
@@ -109,6 +139,8 @@ input[type="number"] {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-rise,
+  .animate-sheet,
+  .animate-fade,
   .bar-grow {
     animation: none;
   }
