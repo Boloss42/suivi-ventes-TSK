@@ -162,3 +162,41 @@ export function analyzeVehicle(
     suggestPriceDrop: false,
   };
 }
+
+/**
+ * Gain d'activité de la dernière semaine = dernier relevé − relevé précédent.
+ * Les relevés étant des totaux cumulés (snapshots), c'est cette différence —
+ * pas le cumul — qui reflète l'activité de la semaine. Renvoie null s'il
+ * manque un des deux relevés (moins de deux relevés). Les écarts négatifs
+ * (saisie incohérente) sont ramenés à 0.
+ */
+export function weeklyActivity(
+  latest: StatSnapshot | null,
+  previous: StatSnapshot | null,
+): StatSnapshot | null {
+  if (!latest || !previous) return null;
+  return {
+    views: Math.max(0, latest.views - previous.views),
+    contacts: Math.max(0, latest.contacts - previous.contacts),
+    calls: Math.max(0, latest.calls - previous.calls),
+    favorites: Math.max(0, latest.favorites - previous.favorites),
+    visits: Math.max(0, latest.visits - previous.visits),
+    offers: Math.max(0, latest.offers - previous.offers),
+  };
+}
+
+/**
+ * Diagnostic à partir des deux derniers relevés cumulés : analyse le gain de la
+ * semaine (et non le cumul). Renvoie null tant qu'il n'y a pas deux relevés
+ * (activité hebdomadaire non mesurable) — la carte « Chances de vente » n'est
+ * alors pas affichée.
+ */
+export function diagnoseFromSnapshots(
+  latest: StatSnapshot | null,
+  previous: StatSnapshot | null,
+  opts?: { mandateDays?: number; price?: number; advisedPrice?: number | null },
+): Diagnostic | null {
+  const weekly = weeklyActivity(latest, previous);
+  if (!weekly) return null;
+  return analyzeVehicle(weekly, opts);
+}

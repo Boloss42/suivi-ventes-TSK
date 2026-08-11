@@ -6,7 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import SellabilityCard from "@/components/SellabilityCard";
 import { formatDate, formatPrice, formatMileage, formatMandateAge, daysSince } from "@/lib/format";
 import { formatWeekShort } from "@/lib/week";
-import { analyzeVehicle } from "@/lib/diagnostic";
+import { diagnoseFromSnapshots, weeklyActivity } from "@/lib/diagnostic";
 import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailChart";
 import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 import SharePanel from "@/components/client/SharePanel";
@@ -58,24 +58,35 @@ export default async function ClientVehicleDetailPage({
   }));
 
   const latestStat = vehicle.weeklyStats.at(-1);
-
-  const diagnostic = analyzeVehicle(
-    latestStat
-      ? {
-          views: latestStat.views,
-          contacts: latestStat.contacts,
-          calls: latestStat.calls,
-          favorites: latestStat.favorites,
-          visits: latestStat.visits,
-          offers: latestStat.offers,
-        }
-      : null,
-    {
-      mandateDays: daysSince(vehicle.depositDate),
-      price: vehicle.price,
-      advisedPrice: vehicle.advisedPrice,
-    },
-  );
+  const prevStat = vehicle.weeklyStats.at(-2);
+  const latestSnap = latestStat
+    ? {
+        views: latestStat.views,
+        contacts: latestStat.contacts,
+        calls: latestStat.calls,
+        favorites: latestStat.favorites,
+        visits: latestStat.visits,
+        offers: latestStat.offers,
+      }
+    : null;
+  const prevSnap = prevStat
+    ? {
+        views: prevStat.views,
+        contacts: prevStat.contacts,
+        calls: prevStat.calls,
+        favorites: prevStat.favorites,
+        visits: prevStat.visits,
+        offers: prevStat.offers,
+      }
+    : null;
+  // Relevés cumulés : diagnostic ET estimation portent sur le gain de la
+  // semaine (dernier − précédent), pas le cumul.
+  const weekly = weeklyActivity(latestSnap, prevSnap);
+  const diagnostic = diagnoseFromSnapshots(latestSnap, prevSnap, {
+    mandateDays: daysSince(vehicle.depositDate),
+    price: vehicle.price,
+    advisedPrice: vehicle.advisedPrice,
+  });
 
   // --- Synthèse : les relevés sont des totaux cumulés (snapshots). Le total =
   // dernier relevé ; l'évolution de la semaine = dernier relevé − précédent. ---
@@ -92,7 +103,7 @@ export default async function ClientVehicleDetailPage({
   const daysOnline = daysSince(vehicle.depositDate);
 
   // --- Estimation indicative du délai de vente ---
-  const estimate = estimateSaleTime(diagnostic, latestStat ?? null);
+  const estimate = estimateSaleTime(diagnostic, weekly);
 
   // --- Fil chronologique de la vente ---
   const initialPrice = vehicle.priceChanges.at(-1)?.price ?? vehicle.price;

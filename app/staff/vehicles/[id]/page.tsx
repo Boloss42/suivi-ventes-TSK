@@ -7,7 +7,7 @@ import StatusBadge from "@/components/StatusBadge";
 import SellabilityCard from "@/components/SellabilityCard";
 import { formatDate, formatPrice, formatMileage, formatMandateAge, daysSince } from "@/lib/format";
 import { currentWeekStart, formatWeekLabel, formatWeekShort } from "@/lib/week";
-import { analyzeVehicle } from "@/lib/diagnostic";
+import { diagnoseFromSnapshots } from "@/lib/diagnostic";
 import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 import DeleteStatButton from "@/components/DeleteStatButton";
 import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
@@ -44,7 +44,10 @@ export default async function VehicleDetailPage({
   });
 
   const latestStat = vehicle.weeklyStats[0];
-  const diagnostic = analyzeVehicle(
+  const prevStat = vehicle.weeklyStats[1];
+  // Relevés cumulés : le diagnostic analyse le gain de la semaine (dernier −
+  // précédent), pas le cumul. Pas de carte tant qu'il n'y a pas deux relevés.
+  const diagnostic = diagnoseFromSnapshots(
     latestStat
       ? {
           views: latestStat.views,
@@ -53,6 +56,16 @@ export default async function VehicleDetailPage({
           favorites: latestStat.favorites,
           visits: latestStat.visits,
           offers: latestStat.offers,
+        }
+      : null,
+    prevStat
+      ? {
+          views: prevStat.views,
+          contacts: prevStat.contacts,
+          calls: prevStat.calls,
+          favorites: prevStat.favorites,
+          visits: prevStat.visits,
+          offers: prevStat.offers,
         }
       : null,
     { mandateDays: daysSince(vehicle.depositDate), price: vehicle.price, advisedPrice: vehicle.advisedPrice },
