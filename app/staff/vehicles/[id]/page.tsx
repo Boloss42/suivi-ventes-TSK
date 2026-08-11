@@ -6,11 +6,12 @@ import { requireStaff } from "@/lib/session";
 import StatusBadge from "@/components/StatusBadge";
 import SellabilityCard from "@/components/SellabilityCard";
 import { formatDate, formatPrice, formatMileage, formatMandateAge, daysSince } from "@/lib/format";
-import { currentWeekStart, formatWeekLabel } from "@/lib/week";
+import { currentWeekStart, formatWeekLabel, formatWeekShort } from "@/lib/week";
 import { analyzeVehicle } from "@/lib/diagnostic";
 import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 import DeleteStatButton from "@/components/DeleteStatButton";
 import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
+import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailChart";
 
 export default async function VehicleDetailPage({
   params,
@@ -83,6 +84,18 @@ export default async function VehicleDetailPage({
     { label: "Offres", total: totals.offers, week: lastWeek?.offers ?? null, prevWeek: prevWeek?.offers ?? null, highlight: true },
   ];
   const daysOnline = daysSince(vehicle.depositDate);
+
+  // Données du graphe : en ordre chronologique (les relevés sont triés du plus
+  // récent au plus ancien côté staff).
+  const chartData: StatPoint[] = [...vehicle.weeklyStats].reverse().map((s) => ({
+    week: formatWeekShort(s.weekStart),
+    views: s.views,
+    contacts: s.contacts,
+    calls: s.calls,
+    favorites: s.favorites,
+    visits: s.visits,
+    offers: s.offers,
+  }));
 
   return (
     <div>
@@ -263,6 +276,21 @@ export default async function VehicleDetailPage({
                 {vehicle._count.shareClicks} clic{vehicle._count.shareClicks > 1 ? "s" : ""}
               </span>
             </p>
+          )}
+
+          {chartData.length > 0 && (
+            <StatDetailChart
+              data={chartData}
+              latestValues={{
+                views: latestStat?.views,
+                contacts: latestStat?.contacts,
+                calls: latestStat?.calls,
+                favorites: latestStat?.favorites,
+                visits: latestStat?.visits,
+                offers: latestStat?.offers,
+              }}
+              latestWeekLabel={latestStat ? formatDate(latestStat.weekStart) : null}
+            />
           )}
 
           <div className="rounded-lg border border-ink-100 bg-white p-6">
