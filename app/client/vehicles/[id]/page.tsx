@@ -12,6 +12,10 @@ import HistoryTable from "@/components/client/HistoryTable";
 import PriceProposalPanel from "@/components/client/PriceProposalPanel";
 import SharePanel from "@/components/client/SharePanel";
 import AccelerateSaleModal from "@/components/client/AccelerateSaleModal";
+import SaleSummary, { type SummaryMetric } from "@/components/client/SaleSummary";
+import SaleEstimate from "@/components/client/SaleEstimate";
+import ActivityTimeline, { type TimelineEvent, type TimelineTone } from "@/components/client/ActivityTimeline";
+import { estimateSaleTime } from "@/lib/saleEstimate";
 
 export default async function ClientVehicleDetailPage({
   params,
@@ -36,10 +40,11 @@ export default async function ClientVehicleDetailPage({
   // n'existe tout simplement pas de son point de vue.
   if (!vehicle || vehicle.clientId !== clientId) notFound();
 
-  const latestProposalRow = await prisma.priceProposal.findFirst({
+  const proposals = await prisma.priceProposal.findMany({
     where: { vehicleId: id },
     orderBy: { createdAt: "desc" },
   });
+  const latestProposalRow = proposals[0] ?? null;
 
   const chartData: StatPoint[] = vehicle.weeklyStats.map((s) => ({
     week: formatWeekShort(s.weekStart),
@@ -72,6 +77,79 @@ export default async function ClientVehicleDetailPage({
     },
   );
 
+  // --- Synthèse cumulée + évolution de la dernière semaine ---
+  const totals = vehicle.weeklyStats.reduce(
+    (a, s) => ({
+      views: a.views + s.views,
+      contacts: a.contacts + s.contacts,
+      calls: a.calls + s.calls,
+      favorites: a.favorites + s.favorites,
+      visits: a.visits + s.visits,
+      offers: a.offers + s.offers,
+    }),
+    { views: 0, contacts: 0, calls: 0, favorites: 0, visits: 0, offers: 0 },
+  );
+  const lastWeek = vehicle.weeklyStats.at(-1);
+  const prevWeek = vehicle.weeklyStats.at(-2);
+  const summaryMetrics: SummaryMetric[] = [
+    { label: "Vues", total: totals.views, week: lastWeek?.views ?? null, prevWeek: prevWeek?.views ?? null },
+    { label: "Contacts", total: totals.contacts, week: lastWeek?.contacts ?? null, prevWeek: prevWeek?.contacts ?? null },
+    { label: "Appels", total: totals.calls, week: lastWeek?.calls ?? null, prevWeek: prevWeek?.calls ?? null },
+    { label: "Favoris", total: totals.favorites, week: lastWeek?.favorites ?? null, prevWeek: prevWeek?.favorites ?? null },
+    { label: "Visites", total: totals.visits, week: lastWeek?.visits ?? null, prevWeek: prevWeek?.visits ?? null, highlight: true },
+    { label: "Offres", total: totals.offers, week: lastWeek?.offers ?? null, prevWeek: prevWeek?.offers ?? null, highlight: true },
+  ];
+  const daysOnline = daysSince(vehicle.depositDate);
+
+  // --- Estimation indicative du délai de vente ---
+  const estimate = estimateSaleTime(diagnostic, latestStat ?? null);
+
+  // --- Fil chronologique de la vente ---
+  const initialPrice = vehicle.priceChanges.at(-1)?.price ?? vehicle.price;
+  const rawEvents: { at: Date; title: string; detail?: string; tone: TimelineTone }[] = [
+    {
+      at: vehicle.depositDate,
+      title: "Mise en dépôt",
+      detail: `Prix de départ : ${formatPrice(initialPrice)}`,
+      tone: "brand",
+    },
+  ];
+  // Changements de prix (hors ligne initiale, déjà couverte par la mise en dépôt).
+  for (const change of vehicle.priceChanges.slice(0, -1)) {
+    rawEvents.push({
+      at: change.createdAt,
+      title: "Prix ajusté",
+      detail: formatPrice(change.price),
+      tone: "neutral",
+    });
+  }
+  for (const proposal of proposals) {
+    const statusLabel =
+      proposal.status === "PENDING"
+        ? "en attente"
+        : proposal.status === "ACCEPTED"
+          ? "acceptée"
+          : "refusée";
+    rawEvents.push({
+      at: proposal.createdAt,
+      title: "Proposition de baisse",
+      detail: `${formatPrice(proposal.proposedPrice)} — ${statusLabel}`,
+      tone: proposal.status === "PENDING" ? "warning" : "neutral",
+    });
+  }
+  const bestWeek = [...vehicle.weeklyStats].sort((a, b) => b.views - a.views)[0];
+  if (bestWeek && bestWeek.views > 0) {
+    rawEvents.push({
+      at: bestWeek.weekStart,
+      title: "Pic d'activité",
+      detail: `${bestWeek.views} vues en une semaine`,
+      tone: "good",
+    });
+  }
+  const timelineEvents: TimelineEvent[] = rawEvents
+    .sort((a, b) => b.at.getTime() - a.at.getTime())
+    .map((e) => ({ date: formatDate(e.at), title: e.title, detail: e.detail, tone: e.tone }));
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -85,6 +163,12 @@ export default async function ClientVehicleDetailPage({
           </span>
         )}
       </div>
+
+      {vehicle.weeklyStats.length > 0 && (
+        <div className="mb-6">
+          <SaleSummary daysOnline={daysOnline} metrics={summaryMetrics} />
+        </div>
+      )}
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[380px_1fr]">
         <div className="contents lg:block lg:min-w-0 lg:space-y-4">
@@ -216,6 +300,12 @@ export default async function ClientVehicleDetailPage({
             </div>
           )}
 
+          {estimate && (
+            <div className="order-5 lg:order-none">
+              <SaleEstimate estimate={estimate} />
+            </div>
+          )}
+
           <div className="order-3 lg:order-none">
             <StatDetailChart
               data={chartData}
@@ -246,6 +336,12 @@ export default async function ClientVehicleDetailPage({
                   note: stat.note,
                 }))}
               />
+            </div>
+          )}
+
+          {timelineEvents.length > 0 && (
+            <div className="order-11 lg:order-none">
+              <ActivityTimeline events={timelineEvents} />
             </div>
           )}
         </div>
