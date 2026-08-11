@@ -63,28 +63,19 @@ export default async function VehicleDetailPage({
     (s) => s.weekStart.getTime() === thisWeek.getTime(),
   );
 
-  // Synthèse cumulée + évolution de la dernière semaine (relevés triés du plus
-  // récent au plus ancien côté staff : dernier = [0], précédent = [1]).
-  const totals = vehicle.weeklyStats.reduce(
-    (a, s) => ({
-      views: a.views + s.views,
-      contacts: a.contacts + s.contacts,
-      calls: a.calls + s.calls,
-      favorites: a.favorites + s.favorites,
-      visits: a.visits + s.visits,
-      offers: a.offers + s.offers,
-    }),
-    { views: 0, contacts: 0, calls: 0, favorites: 0, visits: 0, offers: 0 },
-  );
+  // Synthèse : les relevés sont des totaux cumulés (snapshots). Le total =
+  // dernier relevé ; l'évolution de la semaine = dernier relevé − précédent.
+  // Relevés triés du plus récent au plus ancien côté staff : dernier = [0],
+  // précédent = [1].
   const lastWeek = vehicle.weeklyStats[0];
   const prevWeek = vehicle.weeklyStats[1];
   const summaryMetrics: SummaryMetric[] = [
-    { label: "Vues", total: totals.views, week: lastWeek?.views ?? null, prevWeek: prevWeek?.views ?? null },
-    { label: "Contacts", total: totals.contacts, week: lastWeek?.contacts ?? null, prevWeek: prevWeek?.contacts ?? null },
-    { label: "Appels", total: totals.calls, week: lastWeek?.calls ?? null, prevWeek: prevWeek?.calls ?? null },
-    { label: "Favoris", total: totals.favorites, week: lastWeek?.favorites ?? null, prevWeek: prevWeek?.favorites ?? null },
-    { label: "Visites", total: totals.visits, week: lastWeek?.visits ?? null, prevWeek: prevWeek?.visits ?? null, highlight: true },
-    { label: "Offres", total: totals.offers, week: lastWeek?.offers ?? null, prevWeek: prevWeek?.offers ?? null, highlight: true },
+    { label: "Vues", total: lastWeek?.views ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.views - prevWeek.views : null },
+    { label: "Contacts", total: lastWeek?.contacts ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.contacts - prevWeek.contacts : null },
+    { label: "Appels", total: lastWeek?.calls ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.calls - prevWeek.calls : null },
+    { label: "Favoris", total: lastWeek?.favorites ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.favorites - prevWeek.favorites : null },
+    { label: "Visites", total: lastWeek?.visits ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.visits - prevWeek.visits : null, highlight: true },
+    { label: "Offres", total: lastWeek?.offers ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.offers - prevWeek.offers : null, highlight: true },
   ];
   const daysOnline = daysSince(vehicle.depositDate);
 

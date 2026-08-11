@@ -1,14 +1,15 @@
-// Bandeau de synthèse de la vente : totaux cumulés depuis la mise en vente
-// (vues, contacts, appels, favoris, visites, offres) avec, pour chaque
-// indicateur, l'évolution de la dernière semaine par rapport à la précédente.
+// Bandeau de synthèse de la vente. Les relevés hebdomadaires sont des TOTAUX
+// CUMULÉS (snapshot des stats de la plateforme à l'instant de la saisie), pas
+// des incréments. Donc :
+//   - le total « depuis la mise en vente » = le dernier relevé (dernier snapshot) ;
+//   - l'évolution « cette semaine » = dernier relevé − relevé précédent.
 
 export type SummaryMetric = {
   label: string;
+  // Total cumulé = valeur du dernier relevé.
   total: number;
-  // Valeur de la dernière semaine relevée (null si aucun relevé).
-  week: number | null;
-  // Valeur de la semaine précédente (null si moins de deux relevés).
-  prevWeek: number | null;
+  // Gain de la dernière semaine (dernier relevé − précédent), null si un seul relevé.
+  weekDelta: number | null;
   // Met en avant l'indicateur (offres, visites) car ce sont les signaux forts.
   highlight?: boolean;
 };
@@ -38,7 +39,7 @@ export default function SaleSummary({
             >
               {m.total}
             </dd>
-            <WeekDelta week={m.week} prevWeek={m.prevWeek} />
+            <WeekDelta delta={m.weekDelta} />
           </div>
         ))}
       </dl>
@@ -46,23 +47,24 @@ export default function SaleSummary({
   );
 }
 
-function WeekDelta({ week, prevWeek }: { week: number | null; prevWeek: number | null }) {
-  if (week == null) {
+function WeekDelta({ delta }: { delta: number | null }) {
+  // Un seul relevé : pas de semaine précédente pour calculer un gain.
+  if (delta == null) {
     return <p className="mt-0.5 text-xs text-ink-300">—</p>;
   }
-
-  // Sans semaine précédente, on ne peut pas indiquer de tendance.
-  if (prevWeek == null) {
-    return <p className="mt-0.5 text-xs text-ink-500">+{week} cette sem.</p>;
+  if (delta === 0) {
+    return <p className="mt-0.5 text-xs text-ink-400">→ 0 cette sem.</p>;
   }
 
-  const diff = week - prevWeek;
-  const arrow = diff > 0 ? "↑" : diff < 0 ? "↓" : "→";
-  const color = diff > 0 ? "text-emerald-600" : diff < 0 ? "text-amber-600" : "text-ink-400";
+  const positive = delta > 0;
+  const arrow = positive ? "↑" : "↓";
+  const color = positive ? "text-emerald-600" : "text-amber-600";
+  const sign = positive ? "+" : "";
 
   return (
     <p className={`mt-0.5 text-xs ${color}`}>
-      {arrow} {week} cette sem.
+      {arrow} {sign}
+      {delta} cette sem.
     </p>
   );
 }
