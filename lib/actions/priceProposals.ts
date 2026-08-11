@@ -154,8 +154,9 @@ export async function suggestPriceDropToClient(
 
   const vehicleLabel = `${vehicle.make} ${vehicle.model}`;
   const suggestedPrice = formatPrice(parsed.data.proposedPrice);
-  // Ton doux : on suggère une piste et on invite à en discuter, sans injonction.
-  const base = `Votre conseiller vous propose une piste pour accélérer la vente de votre ${vehicleLabel} : envisager un prix autour de ${suggestedPrice}. N'hésitez pas à en discuter avec lui.`;
+  // Message direct mais constructif : au prix actuel le véhicule ne se vend pas ;
+  // un ajustement est nécessaire. Le conseiller reste disponible pour en parler.
+  const base = `Au prix actuel, votre ${vehicleLabel} ne trouve pas preneur. Pour qu'il se vende, votre conseiller recommande d'ajuster le prix à ${suggestedPrice}. Contactez-le pour en parler.`;
   const message = parsed.data.message ? `${base} « ${parsed.data.message} »` : base;
 
   // Notification in-app (cloche client).

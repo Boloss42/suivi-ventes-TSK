@@ -1,9 +1,10 @@
 import { sendEmail, type SendEmailResult } from "@/lib/email";
 
 /**
- * Email envoyé au client quand son conseiller lui suggère d'ajuster le prix
- * net vendeur de son véhicule. Ton volontairement doux (suggestion, pas
- * injonction) et invitation à en discuter par téléphone avec son conseiller.
+ * Email envoyé au client quand son conseiller estime que le prix est trop haut
+ * pour que le véhicule se vende. Message direct mais constructif : au prix
+ * actuel le véhicule risque de ne pas trouver preneur ; un ajustement est
+ * nécessaire pour vendre. Le conseiller reste disponible pour en discuter.
  */
 
 const BRAND = "MyVitrine";
@@ -27,21 +28,23 @@ export function buildPriceSuggestionEmail(params: PriceSuggestionParams): {
 } {
   const { firstName, vehicleLabel, currentPrice, suggestedPrice, message, advisorName, advisorPhone, link } =
     params;
-  const subject = `${BRAND} — une piste pour accélérer la vente de votre ${vehicleLabel}`;
+  const subject = `${BRAND} — le point sur la vente de votre ${vehicleLabel}`;
   const advisor = advisorName ? `votre conseiller ${advisorName}` : "votre conseiller";
   const telHref = advisorPhone ? `tel:${advisorPhone.replace(/\s+/g, "")}` : null;
 
   const text = [
     `Bonjour ${firstName},`,
     ``,
-    `Votre ${vehicleLabel} est suivi de près. Pour accélérer la vente, ${advisor} pense qu'un léger ajustement du prix pourrait faire la différence.`,
+    `Votre ${vehicleLabel} est en ligne, mais il ne rencontre pas encore l'intérêt attendu des acheteurs.`,
     ``,
-    `À titre indicatif :`,
+    `Dans la grande majorité des cas, cela veut dire que le prix est au-dessus de ce que le marché est prêt à payer aujourd'hui. Tant qu'il reste à ce niveau, le véhicule risque de ne pas trouver preneur.`,
+    ``,
+    `Pour qu'il se vende, ${advisor} recommande d'ajuster le prix :`,
     `- Prix actuel : ${currentPrice}`,
-    `- Prix envisagé : ${suggestedPrice}`,
+    `- Prix recommandé pour vendre : ${suggestedPrice}`,
     ...(message ? [``, `Son mot : « ${message} »`] : []),
     ``,
-    `Ce n'est qu'une suggestion : le mieux est d'en discuter ensemble pour choisir la meilleure stratégie.`,
+    `Le bon prix est celui qui déclenche les contacts et les visites. Votre conseiller peut définir avec vous le tarif le plus juste.`,
     ...(advisorPhone ? [``, `Pour en parler : ${advisorPhone}`] : []),
     ``,
     `Votre espace : ${link}`,
@@ -82,20 +85,27 @@ export function buildPriceSuggestionEmail(params: PriceSuggestionParams): {
               <td style="padding:32px;">
                 <p style="margin:0 0 16px;font-size:16px;">Bonjour ${escapeHtml(firstName)},</p>
                 <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#33344a;">
-                  Votre <strong>${escapeHtml(vehicleLabel)}</strong> est suivi de près. Pour accélérer la
-                  vente, ${escapeHtml(advisor)} pense qu'un léger ajustement du prix pourrait faire la différence.
+                  Votre <strong>${escapeHtml(vehicleLabel)}</strong> est en ligne, mais il ne rencontre
+                  pas encore l'intérêt attendu de la part des acheteurs.
                 </p>
-                <p style="margin:0 0 10px;font-size:13px;color:#7a7b90;">À titre indicatif :</p>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#33344a;">
+                  Dans la grande majorité des cas, cela signifie que le prix est au-dessus de ce que le
+                  marché est prêt à payer aujourd'hui. <strong>Tant qu'il reste à ce niveau, le véhicule
+                  risque de ne pas trouver preneur.</strong>
+                </p>
+                <p style="margin:0 0 10px;font-size:15px;line-height:1.5;color:#33344a;">
+                  Pour qu'il se vende, ${escapeHtml(advisor)} recommande d'ajuster le prix :
+                </p>
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;width:100%;border-collapse:collapse;">
                   <tr>
                     <td style="padding:10px 14px;border:1px solid #ececf1;border-radius:8px 0 0 8px;font-size:13px;color:#7a7b90;">Prix actuel<br><span style="font-size:16px;color:#33344a;">${escapeHtml(currentPrice)}</span></td>
-                    <td style="padding:10px 14px;border:1px solid ${ACCENT};border-radius:0 8px 8px 0;font-size:13px;color:${ACCENT};">Prix envisagé<br><span style="font-size:16px;font-weight:700;color:${ACCENT};">${escapeHtml(suggestedPrice)}</span></td>
+                    <td style="padding:10px 14px;border:1px solid ${ACCENT};border-radius:0 8px 8px 0;font-size:13px;color:${ACCENT};">Prix recommandé pour vendre<br><span style="font-size:16px;font-weight:700;color:${ACCENT};">${escapeHtml(suggestedPrice)}</span></td>
                   </tr>
                 </table>
                 ${message ? `<p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:#33344a;background:#fafafc;border-left:3px solid ${ACCENT};padding:10px 14px;">« ${escapeHtml(message)} »</p>` : ""}
                 <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#33344a;">
-                  Ce n'est qu'une suggestion : le mieux est d'en discuter ensemble pour choisir la meilleure
-                  stratégie. Votre conseiller reste à votre écoute.
+                  Le bon prix est celui qui déclenche les contacts et les visites. Votre conseiller peut en
+                  discuter avec vous et définir ensemble le tarif le plus juste.
                 </p>
                 ${contactButton}
               </td>
