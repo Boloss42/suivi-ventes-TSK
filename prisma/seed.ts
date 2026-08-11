@@ -213,35 +213,40 @@ async function main() {
     offers: number;
     note?: string;
   }[] = [
-    // Peugeot 308 (5 semaines)
-    { vehicleId: peugeot308.id, weeksBack: 5, views: 45, contacts: 2, calls: 1, favorites: 3, visits: 0, offers: 0 },
-    { vehicleId: peugeot308.id, weeksBack: 4, views: 78, contacts: 4, calls: 2, favorites: 6, visits: 1, offers: 0 },
-    { vehicleId: peugeot308.id, weeksBack: 3, views: 112, contacts: 6, calls: 3, favorites: 9, visits: 2, offers: 1 },
-    { vehicleId: peugeot308.id, weeksBack: 2, views: 95, contacts: 5, calls: 2, favorites: 8, visits: 1, offers: 0, note: "Baisse légère, prix peut-être à ajuster." },
-    { vehicleId: peugeot308.id, weeksBack: 1, views: 130, contacts: 7, calls: 4, favorites: 11, visits: 3, offers: 1 },
-    { vehicleId: peugeot308.id, weeksBack: 0, views: 60, contacts: 3, calls: 1, favorites: 4, visits: 1, offers: 0 },
+    // Les relevés sont des TOTAUX CUMULÉS (snapshots) : chaque valeur est le
+    // total depuis la mise en vente à cette date, pas l'activité de la semaine.
+    // Les séries sont donc croissantes ; le gain d'une semaine = valeur − valeur
+    // du relevé précédent.
 
-    // Renault Clio (4 semaines)
+    // Peugeot 308 (6 semaines)
+    { vehicleId: peugeot308.id, weeksBack: 5, views: 45, contacts: 2, calls: 1, favorites: 3, visits: 0, offers: 0 },
+    { vehicleId: peugeot308.id, weeksBack: 4, views: 123, contacts: 6, calls: 3, favorites: 9, visits: 1, offers: 0 },
+    { vehicleId: peugeot308.id, weeksBack: 3, views: 235, contacts: 12, calls: 6, favorites: 18, visits: 3, offers: 1 },
+    { vehicleId: peugeot308.id, weeksBack: 2, views: 330, contacts: 17, calls: 8, favorites: 26, visits: 4, offers: 1, note: "Ralentissement des visites, prix peut-être à ajuster." },
+    { vehicleId: peugeot308.id, weeksBack: 1, views: 460, contacts: 24, calls: 12, favorites: 37, visits: 7, offers: 2 },
+    { vehicleId: peugeot308.id, weeksBack: 0, views: 520, contacts: 27, calls: 13, favorites: 41, visits: 8, offers: 2 },
+
+    // Renault Clio (3 semaines)
     { vehicleId: clio.id, weeksBack: 3, views: 60, contacts: 3, calls: 1, favorites: 5, visits: 1, offers: 0 },
-    { vehicleId: clio.id, weeksBack: 2, views: 85, contacts: 5, calls: 2, favorites: 7, visits: 2, offers: 0 },
-    { vehicleId: clio.id, weeksBack: 1, views: 101, contacts: 6, calls: 3, favorites: 10, visits: 2, offers: 1 },
+    { vehicleId: clio.id, weeksBack: 2, views: 145, contacts: 8, calls: 3, favorites: 12, visits: 3, offers: 0 },
+    { vehicleId: clio.id, weeksBack: 1, views: 246, contacts: 14, calls: 6, favorites: 22, visits: 5, offers: 1 },
     // Pas de relevé pour la semaine en cours : illustre l'alerte du tableau de bord staff.
 
     // BMW Série 3 (vendue — historique complet jusqu'à la vente)
     { vehicleId: serie3.id, weeksBack: 6, views: 90, contacts: 5, calls: 2, favorites: 8, visits: 1, offers: 0 },
-    { vehicleId: serie3.id, weeksBack: 5, views: 140, contacts: 9, calls: 4, favorites: 14, visits: 3, offers: 1 },
-    { vehicleId: serie3.id, weeksBack: 4, views: 175, contacts: 12, calls: 6, favorites: 18, visits: 5, offers: 2 },
-    { vehicleId: serie3.id, weeksBack: 3, views: 160, contacts: 10, calls: 5, favorites: 16, visits: 4, offers: 2, note: "Plusieurs offres reçues, négociation en cours." },
-    { vehicleId: serie3.id, weeksBack: 2, views: 120, contacts: 7, calls: 3, favorites: 12, visits: 2, offers: 3, note: "Vente finalisée en fin de semaine." },
+    { vehicleId: serie3.id, weeksBack: 5, views: 230, contacts: 14, calls: 6, favorites: 22, visits: 4, offers: 1 },
+    { vehicleId: serie3.id, weeksBack: 4, views: 405, contacts: 26, calls: 12, favorites: 40, visits: 9, offers: 3 },
+    { vehicleId: serie3.id, weeksBack: 3, views: 565, contacts: 36, calls: 17, favorites: 56, visits: 13, offers: 5, note: "Plusieurs offres reçues, négociation en cours." },
+    { vehicleId: serie3.id, weeksBack: 2, views: 685, contacts: 43, calls: 20, favorites: 68, visits: 15, offers: 8, note: "Vente finalisée en fin de semaine." },
 
-    // Audi A4 (3 semaines)
+    // Audi A4 (2 semaines)
     { vehicleId: a4.id, weeksBack: 2, views: 50, contacts: 2, calls: 1, favorites: 4, visits: 0, offers: 0 },
-    { vehicleId: a4.id, weeksBack: 1, views: 88, contacts: 4, calls: 2, favorites: 7, visits: 1, offers: 0 },
+    { vehicleId: a4.id, weeksBack: 1, views: 138, contacts: 6, calls: 3, favorites: 11, visits: 1, offers: 0 },
     // Pas de relevé pour la semaine en cours : illustre l'alerte du tableau de bord staff.
 
     // Citroën C3 (retirée — historique figé)
     { vehicleId: c3.id, weeksBack: 8, views: 30, contacts: 1, calls: 0, favorites: 2, visits: 0, offers: 0 },
-    { vehicleId: c3.id, weeksBack: 7, views: 25, contacts: 1, calls: 0, favorites: 1, visits: 0, offers: 0, note: "Peu d'intérêt, véhicule retiré de la vente." },
+    { vehicleId: c3.id, weeksBack: 7, views: 55, contacts: 2, calls: 0, favorites: 3, visits: 0, offers: 0, note: "Peu d'intérêt, véhicule retiré de la vente." },
   ];
 
   for (const s of weeklyStatsData) {
