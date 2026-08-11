@@ -9,6 +9,10 @@ export const staffAccountSchema = z.object({
   email: z.string().email("Adresse email invalide"),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Adresse email invalide"),
+});
+
 export const staffProfileSchema = z.object({
   firstName: z.string().optional(),
   phone: z.string().optional(),
