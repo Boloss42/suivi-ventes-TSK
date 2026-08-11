@@ -140,7 +140,13 @@ export default async function VehicleDetailPage({
             </Link>
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={`/staff/vehicles/${vehicle.id}/report`}
+            className="rounded-md border border-ink-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-white"
+          >
+            Export PDF
+          </a>
           <Link
             href={`/staff/vehicles/${vehicle.id}/edit`}
             className="rounded-md border border-ink-200 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-white"
