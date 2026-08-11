@@ -12,6 +12,7 @@ import { respondToPriceProposal } from "@/lib/actions/priceProposals";
 import DeleteStatButton from "@/components/DeleteStatButton";
 import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
 import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailChart";
+import PriceSuggestionPanel from "@/components/staff/PriceSuggestionPanel";
 
 export default async function VehicleDetailPage({
   params,
@@ -267,7 +268,18 @@ export default async function VehicleDetailPage({
         </div>
 
         <div className="min-w-0 space-y-6">
-          {diagnostic && <SellabilityCard diagnostic={diagnostic} />}
+          {diagnostic && (
+            <SellabilityCard
+              diagnostic={diagnostic}
+              cta={
+                <PriceSuggestionPanel
+                  vehicleId={vehicle.id}
+                  currentPrice={vehicle.price}
+                  advisedPrice={vehicle.advisedPrice}
+                />
+              }
+            />
+          )}
 
           {vehicle._count.shareClicks > 0 && (
             <p className="text-sm text-ink-500">

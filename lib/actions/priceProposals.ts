@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireClient, requireStaff } from "@/lib/session";
 import { priceProposalSchema } from "@/lib/validation";
+import { formatPrice } from "@/lib/format";
+import { sendPriceSuggestionEmail } from "@/lib/emails/priceSuggestion";
 
 export type ProposePriceState = { error?: string; success?: boolean };
 
@@ -100,4 +103,79 @@ export async function respondToPriceProposal(
   revalidatePath(`/staff/vehicles/${proposal.vehicleId}`);
   revalidatePath(`/client/vehicles/${proposal.vehicleId}`);
   revalidatePath("/staff/dashboard");
+}
+
+export type SuggestPriceState = { error?: string; success?: boolean };
+
+/**
+ * L'agent recommande à son client de baisser le prix net vendeur. Envoie une
+ * notification in-app ET un email (non bloquant) au client propriétaire.
+ * Isolation stricte : agence + agent assigné.
+ */
+export async function suggestPriceDropToClient(
+  _prevState: SuggestPriceState,
+  formData: FormData,
+): Promise<SuggestPriceState> {
+  const { agencyId, userId } = await requireStaff();
+
+  const parsed = priceProposalSchema.safeParse({
+    vehicleId: formData.get("vehicleId"),
+    proposedPrice: formData.get("proposedPrice"),
+    message: formData.get("message") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
+  }
+
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id: parsed.data.vehicleId, agencyId, client: { assignedStaffId: userId } },
+    select: {
+      id: true,
+      make: true,
+      model: true,
+      price: true,
+      clientId: true,
+      client: { select: { firstName: true, user: { select: { email: true } } } },
+    },
+  });
+  if (!vehicle) {
+    return { error: "Véhicule introuvable." };
+  }
+
+  if (parsed.data.proposedPrice >= vehicle.price) {
+    return { error: "Le prix recommandé doit être inférieur au prix actuel." };
+  }
+
+  const vehicleLabel = `${vehicle.make} ${vehicle.model}`;
+  const suggestedPrice = formatPrice(parsed.data.proposedPrice);
+  const base = `Votre conseiller vous recommande de baisser le prix de votre ${vehicleLabel} à ${suggestedPrice} pour accélérer la vente.`;
+  const message = parsed.data.message ? `${base} « ${parsed.data.message} »` : base;
+
+  // Notification in-app (cloche client).
+  await prisma.notification.create({
+    data: {
+      clientId: vehicle.clientId,
+      vehicleId: vehicle.id,
+      type: "PRICE_PROPOSAL",
+      message,
+    },
+  });
+
+  // Email (non bloquant : l'échec n'empêche pas la notification in-app).
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  await sendPriceSuggestionEmail(vehicle.client.user.email, {
+    firstName: vehicle.client.firstName,
+    vehicleLabel,
+    currentPrice: formatPrice(vehicle.price),
+    suggestedPrice,
+    message: parsed.data.message ?? null,
+    link: `${proto}://${host}/client/vehicles/${vehicle.id}`,
+  });
+
+  revalidatePath(`/staff/vehicles/${vehicle.id}`);
+  revalidatePath(`/client/vehicles/${vehicle.id}`);
+
+  return { success: true };
 }
