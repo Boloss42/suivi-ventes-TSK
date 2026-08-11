@@ -127,12 +127,21 @@ export default async function ClientVehicleDetailPage({
       tone: proposal.status === "PENDING" ? "warning" : "neutral",
     });
   }
-  const bestWeek = [...vehicle.weeklyStats].sort((a, b) => b.views - a.views)[0];
-  if (bestWeek && bestWeek.views > 0) {
+  // Pic d'activité : plus fort GAIN de vues sur une semaine (relevé − relevé
+  // précédent), pas le cumul. Les relevés sont triés du plus ancien au plus
+  // récent, donc l'écart i / i-1 est bien l'activité de la semaine i.
+  let bestWeek: { weekStart: Date; delta: number } | null = null;
+  for (let i = 1; i < vehicle.weeklyStats.length; i++) {
+    const delta = vehicle.weeklyStats[i].views - vehicle.weeklyStats[i - 1].views;
+    if (delta > 0 && (!bestWeek || delta > bestWeek.delta)) {
+      bestWeek = { weekStart: vehicle.weeklyStats[i].weekStart, delta };
+    }
+  }
+  if (bestWeek) {
     rawEvents.push({
       at: bestWeek.weekStart,
       title: "Pic d'activité",
-      detail: `${bestWeek.views} vues en une semaine`,
+      detail: `${bestWeek.delta} vues en une semaine`,
       tone: "good",
     });
   }
