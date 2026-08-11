@@ -28,7 +28,7 @@ export function buildPriceSuggestionEmail(params: PriceSuggestionParams): {
 } {
   const { firstName, vehicleLabel, currentPrice, suggestedPrice, message, advisorName, advisorPhone, link } =
     params;
-  const subject = `${BRAND} — le point sur la vente de votre ${vehicleLabel}`;
+  const subject = `${BRAND} — Rapport de vente ${vehicleLabel}${advisorName ? ` par ${advisorName}` : ""}`;
   const advisor = advisorName ? `votre conseiller ${advisorName}` : "votre conseiller";
   const telHref = advisorPhone ? `tel:${advisorPhone.replace(/\s+/g, "")}` : null;
 
