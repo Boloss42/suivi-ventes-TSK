@@ -1,8 +1,9 @@
 import { sendEmail, type SendEmailResult } from "@/lib/email";
 
 /**
- * Email envoyé au client quand son conseiller lui recommande de baisser le
- * prix net vendeur de son véhicule pour accélérer la vente.
+ * Email envoyé au client quand son conseiller lui suggère d'ajuster le prix
+ * net vendeur de son véhicule. Ton volontairement doux (suggestion, pas
+ * injonction) et invitation à en discuter par téléphone avec son conseiller.
  */
 
 const BRAND = "MyVitrine";
@@ -14,6 +15,8 @@ type PriceSuggestionParams = {
   currentPrice: string;
   suggestedPrice: string;
   message?: string | null;
+  advisorName?: string | null;
+  advisorPhone?: string | null;
   link: string;
 };
 
@@ -22,21 +25,46 @@ export function buildPriceSuggestionEmail(params: PriceSuggestionParams): {
   html: string;
   text: string;
 } {
-  const { firstName, vehicleLabel, currentPrice, suggestedPrice, message, link } = params;
-  const subject = `${BRAND} — recommandation de prix pour votre ${vehicleLabel}`;
+  const { firstName, vehicleLabel, currentPrice, suggestedPrice, message, advisorName, advisorPhone, link } =
+    params;
+  const subject = `${BRAND} — une piste pour accélérer la vente de votre ${vehicleLabel}`;
+  const advisor = advisorName ? `votre conseiller ${advisorName}` : "votre conseiller";
+  const telHref = advisorPhone ? `tel:${advisorPhone.replace(/\s+/g, "")}` : null;
 
   const text = [
     `Bonjour ${firstName},`,
     ``,
-    `Votre conseiller vous recommande de baisser le prix de votre ${vehicleLabel} pour accélérer la vente :`,
-    `Prix actuel : ${currentPrice}`,
-    `Prix recommandé : ${suggestedPrice}`,
-    ...(message ? [``, `Message de votre conseiller : « ${message} »`] : []),
+    `Votre ${vehicleLabel} est suivi de près. Pour accélérer la vente, ${advisor} pense qu'un léger ajustement du prix pourrait faire la différence.`,
     ``,
-    `Consultez votre espace pour en discuter ou ajuster le prix : ${link}`,
+    `À titre indicatif :`,
+    `- Prix actuel : ${currentPrice}`,
+    `- Prix envisagé : ${suggestedPrice}`,
+    ...(message ? [``, `Son mot : « ${message} »`] : []),
+    ``,
+    `Ce n'est qu'une suggestion : le mieux est d'en discuter ensemble pour choisir la meilleure stratégie.`,
+    ...(advisorPhone ? [``, `Pour en parler : ${advisorPhone}`] : []),
+    ``,
+    `Votre espace : ${link}`,
     ``,
     `L'équipe ${BRAND}`,
   ].join("\n");
+
+  const contactButton = telHref
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+                  <tr>
+                    <td style="border-radius:10px;background:${ACCENT};">
+                      <a href="${escapeAttr(telHref)}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">Contacter mon conseiller</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 4px;font-size:13px;color:#7a7b90;">Ou consultez votre espace : <a href="${escapeAttr(link)}" style="color:${ACCENT};">voir mon véhicule</a></p>`
+    : `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+                  <tr>
+                    <td style="border-radius:10px;background:${ACCENT};">
+                      <a href="${escapeAttr(link)}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">Contacter mon conseiller</a>
+                    </td>
+                  </tr>
+                </table>`;
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -54,28 +82,27 @@ export function buildPriceSuggestionEmail(params: PriceSuggestionParams): {
               <td style="padding:32px;">
                 <p style="margin:0 0 16px;font-size:16px;">Bonjour ${escapeHtml(firstName)},</p>
                 <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#33344a;">
-                  Votre conseiller vous recommande de baisser le prix de votre
-                  <strong>${escapeHtml(vehicleLabel)}</strong> pour accélérer la vente.
+                  Votre <strong>${escapeHtml(vehicleLabel)}</strong> est suivi de près. Pour accélérer la
+                  vente, ${escapeHtml(advisor)} pense qu'un léger ajustement du prix pourrait faire la différence.
                 </p>
+                <p style="margin:0 0 10px;font-size:13px;color:#7a7b90;">À titre indicatif :</p>
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;width:100%;border-collapse:collapse;">
                   <tr>
                     <td style="padding:10px 14px;border:1px solid #ececf1;border-radius:8px 0 0 8px;font-size:13px;color:#7a7b90;">Prix actuel<br><span style="font-size:16px;color:#33344a;">${escapeHtml(currentPrice)}</span></td>
-                    <td style="padding:10px 14px;border:1px solid ${ACCENT};border-radius:0 8px 8px 0;font-size:13px;color:${ACCENT};">Prix recommandé<br><span style="font-size:16px;font-weight:700;color:${ACCENT};">${escapeHtml(suggestedPrice)}</span></td>
+                    <td style="padding:10px 14px;border:1px solid ${ACCENT};border-radius:0 8px 8px 0;font-size:13px;color:${ACCENT};">Prix envisagé<br><span style="font-size:16px;font-weight:700;color:${ACCENT};">${escapeHtml(suggestedPrice)}</span></td>
                   </tr>
                 </table>
                 ${message ? `<p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:#33344a;background:#fafafc;border-left:3px solid ${ACCENT};padding:10px 14px;">« ${escapeHtml(message)} »</p>` : ""}
-                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
-                  <tr>
-                    <td style="border-radius:10px;background:${ACCENT};">
-                      <a href="${escapeAttr(link)}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">Voir mon véhicule</a>
-                    </td>
-                  </tr>
-                </table>
+                <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#33344a;">
+                  Ce n'est qu'une suggestion : le mieux est d'en discuter ensemble pour choisir la meilleure
+                  stratégie. Votre conseiller reste à votre écoute.
+                </p>
+                ${contactButton}
               </td>
             </tr>
             <tr>
               <td style="padding:16px 32px;background:#fafafc;border-top:1px solid #ececf1;">
-                <p style="margin:0;font-size:12px;color:#9a9bad;">Vous recevez cet email car votre conseiller ${BRAND} a émis une recommandation sur votre véhicule.</p>
+                <p style="margin:0;font-size:12px;color:#9a9bad;">Vous recevez cet email car votre conseiller ${BRAND} suit la vente de votre véhicule.</p>
               </td>
             </tr>
           </table>
@@ -88,7 +115,7 @@ export function buildPriceSuggestionEmail(params: PriceSuggestionParams): {
   return { subject, html, text };
 }
 
-/** Construit puis envoie l'email de recommandation de prix. Ne lève jamais d'exception. */
+/** Construit puis envoie l'email de suggestion de prix. Ne lève jamais d'exception. */
 export async function sendPriceSuggestionEmail(
   to: string,
   params: PriceSuggestionParams,

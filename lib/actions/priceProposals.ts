@@ -146,9 +146,16 @@ export async function suggestPriceDropToClient(
     return { error: "Le prix recommandé doit être inférieur au prix actuel." };
   }
 
+  // Conseiller (l'agent qui envoie) : nom + téléphone pour le canal « contacter ».
+  const advisor = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, phone: true },
+  });
+
   const vehicleLabel = `${vehicle.make} ${vehicle.model}`;
   const suggestedPrice = formatPrice(parsed.data.proposedPrice);
-  const base = `Votre conseiller vous recommande de baisser le prix de votre ${vehicleLabel} à ${suggestedPrice} pour accélérer la vente.`;
+  // Ton doux : on suggère une piste et on invite à en discuter, sans injonction.
+  const base = `Votre conseiller vous propose une piste pour accélérer la vente de votre ${vehicleLabel} : envisager un prix autour de ${suggestedPrice}. N'hésitez pas à en discuter avec lui.`;
   const message = parsed.data.message ? `${base} « ${parsed.data.message} »` : base;
 
   // Notification in-app (cloche client).
@@ -171,6 +178,8 @@ export async function suggestPriceDropToClient(
     currentPrice: formatPrice(vehicle.price),
     suggestedPrice,
     message: parsed.data.message ?? null,
+    advisorName: advisor?.firstName,
+    advisorPhone: advisor?.phone,
     link: `${proto}://${host}/client/vehicles/${vehicle.id}`,
   });
 
