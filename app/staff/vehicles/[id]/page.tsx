@@ -13,6 +13,7 @@ import DeleteStatButton from "@/components/DeleteStatButton";
 import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
 import StatDetailChart, { type StatPoint } from "@/components/client/StatDetailChart";
 import PriceSuggestionPanel from "@/components/staff/PriceSuggestionPanel";
+import OffersPanel, { type OfferItem } from "@/components/staff/OffersPanel";
 
 export default async function VehicleDetailPage({
   params,
@@ -30,6 +31,7 @@ export default async function VehicleDetailPage({
       listingUrls: true,
       weeklyStats: { orderBy: { weekStart: "desc" } },
       priceChanges: { orderBy: { createdAt: "desc" } },
+      offers: { orderBy: { createdAt: "desc" } },
       _count: { select: { shareClicks: true } },
     },
   });
@@ -96,6 +98,16 @@ export default async function VehicleDetailPage({
     favorites: s.favorites,
     visits: s.visits,
     offers: s.offers,
+  }));
+
+  const offerItems: OfferItem[] = vehicle.offers.map((o) => ({
+    id: o.id,
+    amount: o.amount,
+    buyerName: o.buyerName,
+    buyerContact: o.buyerContact,
+    note: o.note,
+    status: o.status,
+    createdAt: o.createdAt.toISOString(),
   }));
 
   return (
@@ -289,6 +301,8 @@ export default async function VehicleDetailPage({
               </span>
             </p>
           )}
+
+          <OffersPanel vehicleId={vehicle.id} offers={offerItems} />
 
           {chartData.length > 0 && (
             <StatDetailChart

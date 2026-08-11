@@ -15,6 +15,7 @@ import AccelerateSaleModal from "@/components/client/AccelerateSaleModal";
 import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
 import SaleEstimate from "@/components/client/SaleEstimate";
 import ActivityTimeline, { type TimelineEvent, type TimelineTone } from "@/components/client/ActivityTimeline";
+import OffersList, { type ClientOffer } from "@/components/client/OffersList";
 import { estimateSaleTime } from "@/lib/saleEstimate";
 
 export default async function ClientVehicleDetailPage({
@@ -32,6 +33,7 @@ export default async function ClientVehicleDetailPage({
       listingUrls: true,
       weeklyStats: { orderBy: { weekStart: "asc" } },
       priceChanges: { orderBy: { createdAt: "desc" } },
+      offers: { orderBy: { createdAt: "desc" } },
       _count: { select: { shareClicks: true } },
     },
   });
@@ -149,6 +151,15 @@ export default async function ClientVehicleDetailPage({
   const timelineEvents: TimelineEvent[] = rawEvents
     .sort((a, b) => b.at.getTime() - a.at.getTime())
     .map((e) => ({ date: formatDate(e.at), title: e.title, detail: e.detail, tone: e.tone }));
+
+  // Offres reçues (vue client : montant, statut, nom acheteur — sans contact).
+  const clientOffers: ClientOffer[] = vehicle.offers.map((o) => ({
+    id: o.id,
+    amount: o.amount,
+    buyerName: o.buyerName,
+    status: o.status,
+    createdAt: o.createdAt.toISOString(),
+  }));
 
   return (
     <div>
@@ -297,6 +308,12 @@ export default async function ClientVehicleDetailPage({
                   )
                 }
               />
+            </div>
+          )}
+
+          {clientOffers.length > 0 && (
+            <div className="order-5 lg:order-none">
+              <OffersList offers={clientOffers} />
             </div>
           )}
 

@@ -12,7 +12,7 @@ export type NotificationItem = {
   read: boolean;
   createdAt: string;
   vehicleId: string | null;
-  type: "STAT" | "REVIEW" | "PRICE_PROPOSAL";
+  type: "STAT" | "REVIEW" | "PRICE_PROPOSAL" | "OFFER";
 };
 
 export default function NotificationBell({
