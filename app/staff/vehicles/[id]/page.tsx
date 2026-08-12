@@ -176,6 +176,25 @@ export default async function VehicleDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <div className="min-w-0 space-y-4">
+          {/* Photo à la même échelle que la fiche client (grande photo + vignettes),
+              placée en tête de colonne : les caractéristiques passent en dessous. */}
+          {vehicle.photos.length > 0 && (
+            <div className="overflow-hidden rounded-lg border border-ink-100 bg-white">
+              <div className="relative aspect-video">
+                <Image src={vehicle.photos[0].url} alt="" fill className="object-cover" />
+              </div>
+              {vehicle.photos.length > 1 && (
+                <div className="grid grid-cols-4 gap-1 p-1">
+                  {vehicle.photos.slice(1).map((photo) => (
+                    <div key={photo.id} className="relative aspect-square overflow-hidden rounded">
+                      <Image src={photo.url} alt="" fill className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="rounded-lg border border-ink-100 bg-white p-6">
             <h2 className="mb-3 text-sm font-semibold text-ink-800">Caractéristiques</h2>
             <dl className="space-y-2 text-sm">
@@ -304,18 +323,6 @@ export default async function VehicleDetailPage({
             </div>
           )}
 
-          {vehicle.photos.length > 0 && (
-            <div className="rounded-lg border border-ink-100 bg-white p-6">
-              <h2 className="mb-3 text-sm font-semibold text-ink-800">Photos</h2>
-              <div className="grid grid-cols-3 gap-2">
-                {vehicle.photos.map((photo) => (
-                  <div key={photo.id} className="relative aspect-square overflow-hidden rounded-md border border-ink-100">
-                    <Image src={photo.url} alt="" fill className="object-cover" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="min-w-0 space-y-6">

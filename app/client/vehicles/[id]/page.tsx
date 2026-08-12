@@ -15,6 +15,7 @@ import SaleSummary, { type SummaryMetric } from "@/components/SaleSummary";
 import SaleEstimate from "@/components/client/SaleEstimate";
 import ActivityTimeline, { type TimelineEvent, type TimelineTone } from "@/components/client/ActivityTimeline";
 import OffersList, { type ClientOffer } from "@/components/client/OffersList";
+import CollapsibleCard from "@/components/client/CollapsibleCard";
 import { estimateSaleTime } from "@/lib/saleEstimate";
 
 export default async function ClientVehicleDetailPage({
@@ -198,6 +199,26 @@ export default async function ClientVehicleDetailPage({
 
   return (
     <div>
+      {/* Mobile : la photo passe tout en haut de la page (au-dessus du titre et
+          du bandeau). Sur desktop, elle reste dans la colonne de gauche (bloc
+          ci-dessous, masqué en mobile). */}
+      {vehicle.photos.length > 0 && (
+        <div className="mb-6 overflow-hidden rounded-lg border border-ink-100 bg-white lg:hidden">
+          <div className="relative aspect-video">
+            <Image src={vehicle.photos[0].url} alt="" fill className="object-cover" />
+          </div>
+          {vehicle.photos.length > 1 && (
+            <div className="grid grid-cols-4 gap-1 p-1">
+              {vehicle.photos.slice(1).map((photo) => (
+                <div key={photo.id} className="relative aspect-square overflow-hidden rounded">
+                  <Image src={photo.url} alt="" fill className="object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-semibold text-ink-900">
           {vehicle.make} {vehicle.model} ({vehicle.year})
@@ -221,8 +242,10 @@ export default async function ClientVehicleDetailPage({
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[380px_1fr]">
         <div className="contents lg:block lg:min-w-0 lg:space-y-4">
+          {/* Version desktop de la photo (dans la colonne). Masquée en mobile,
+              où la photo est déjà affichée tout en haut de la page. */}
           {vehicle.photos.length > 0 && (
-            <div className="order-1 overflow-hidden rounded-lg border border-ink-100 bg-white lg:order-none">
+            <div className="hidden overflow-hidden rounded-lg border border-ink-100 bg-white lg:order-none lg:block">
               <div className="relative aspect-video">
                 <Image src={vehicle.photos[0].url} alt="" fill className="object-cover" />
               </div>
@@ -238,14 +261,17 @@ export default async function ClientVehicleDetailPage({
             </div>
           )}
 
-          <div className="order-2 rounded-lg border border-ink-100 bg-white p-6 lg:order-none">
-            <h2 className="mb-3 text-sm font-semibold text-ink-800">Caractéristiques</h2>
-            <dl className="space-y-2 text-sm">
-              <Row label="Kilométrage" value={formatMileage(vehicle.mileage)} />
-              <Row label="Motorisation" value={vehicle.fuelType} />
-              <Row label="Prix net vendeur" value={formatPrice(vehicle.price)} />
-              <Row label="En dépôt depuis" value={formatDate(vehicle.depositDate)} />
-            </dl>
+          {/* Caractéristiques : repliées par défaut sur mobile (page plus légère
+              à lire), toujours ouvertes sur desktop. */}
+          <div className="order-2 lg:order-none">
+            <CollapsibleCard title="Caractéristiques">
+              <dl className="space-y-2 text-sm">
+                <Row label="Kilométrage" value={formatMileage(vehicle.mileage)} />
+                <Row label="Motorisation" value={vehicle.fuelType} />
+                <Row label="Prix net vendeur" value={formatPrice(vehicle.price)} />
+                <Row label="En dépôt depuis" value={formatDate(vehicle.depositDate)} />
+              </dl>
+            </CollapsibleCard>
           </div>
 
           {vehicle.priceChanges.length > 1 && (
