@@ -1,16 +1,49 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validation";
 import { generateInviteToken, inviteExpiresAt, buildInviteUrl } from "@/lib/invite";
 import { sendPasswordResetEmail } from "@/lib/emails/passwordReset";
+import { isRateLimited, recordAttempt } from "@/lib/rateLimit";
+
+// Anti-force-brute du login (fenêtre glissante, mémoire process — voir
+// lib/rateLimit.ts). Deux garde-fous complémentaires :
+//  - par (IP, email) : borne les essais sur un compte donné depuis une source ;
+//  - par IP seule : freine le balayage de nombreux emails depuis une même IP.
+const LOGIN_WINDOW_MS = 10 * 60 * 1000; // 10 min
+const LOGIN_PER_ACCOUNT = { limit: 5, windowMs: LOGIN_WINDOW_MS };
+const LOGIN_PER_IP = { limit: 20, windowMs: LOGIN_WINDOW_MS };
+
+function tooManyAttemptsMessage(retryAfterSeconds: number): string {
+  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+  return `Trop de tentatives de connexion. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.`;
+}
+
+/** Première valeur exploitable de `x-forwarded-for`, sinon `x-real-ip`. */
+function clientIp(h: Headers): string {
+  const fwd = h.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0]!.trim();
+  return h.get("x-real-ip")?.trim() || "unknown";
+}
 
 export async function authenticate(
   _prevState: string | undefined,
   formData: FormData,
 ) {
+  const email = String(formData.get("email") ?? "").toLowerCase().trim();
+  const ip = clientIp(await headers());
+  const accountKey = `login:${ip}:${email}`;
+  const ipKey = `login-ip:${ip}`;
+
+  // Blocage AVANT toute vérification d'identifiants si le seuil est atteint.
+  const account = isRateLimited(accountKey, LOGIN_PER_ACCOUNT);
+  if (account.blocked) return tooManyAttemptsMessage(account.retryAfterSeconds);
+  const perIp = isRateLimited(ipKey, LOGIN_PER_IP);
+  if (perIp.blocked) return tooManyAttemptsMessage(perIp.retryAfterSeconds);
+
   try {
     await signIn("credentials", {
       email: formData.get("email"),
@@ -20,8 +53,14 @@ export async function authenticate(
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
-        case "CredentialsSignin":
+        case "CredentialsSignin": {
+          // On ne compte que les ÉCHECS (la réussite lève une redirection et ne
+          // passe pas ici) : un login réussi ne consomme pas le quota.
+          recordAttempt(ipKey, LOGIN_PER_IP);
+          const after = recordAttempt(accountKey, LOGIN_PER_ACCOUNT);
+          if (after.blocked) return tooManyAttemptsMessage(after.retryAfterSeconds);
           return "Email ou mot de passe incorrect.";
+        }
         default:
           return "Une erreur est survenue, veuillez réessayer.";
       }
