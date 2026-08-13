@@ -115,9 +115,19 @@ export default async function StaffDashboardPage() {
       )}
 
       <div className="mb-8 rounded-lg border border-ink-100 bg-white p-6">
-        <h2 className="mb-1 text-sm font-semibold text-ink-800">
-          Relevés manquants — {formatWeekLabel(thisWeek)}
-        </h2>
+        <div className="mb-1 flex flex-wrap items-start justify-between gap-3">
+          <h2 className="text-sm font-semibold text-ink-800">
+            Relevés manquants — {formatWeekLabel(thisWeek)}
+          </h2>
+          {missingThisWeek.length > 0 && (
+            <Link
+              href={`/staff/vehicles/stats/bulk?vehicles=${missingThisWeek.map((v) => v.id).join(",")}`}
+              className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brand-600"
+            >
+              Saisir tous les relevés ({missingThisWeek.length})
+            </Link>
+          )}
+        </div>
         <p className="mb-4 text-sm text-ink-500">
           Véhicules en vente sans statistiques saisies pour la semaine en cours.
         </p>

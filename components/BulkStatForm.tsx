@@ -90,9 +90,12 @@ function SubmitButton({ count }: { count: number }) {
 export default function BulkStatForm({
   vehicles,
   defaultWeekStart,
+  preselectedIds = [],
 }: {
   vehicles: VehicleOption[];
   defaultWeekStart: string;
+  // Véhicules pré-cochés (raccourci « Saisir tous les relevés » du tableau de bord).
+  preselectedIds?: string[];
 }) {
   const [state, formAction] = useActionState<BulkStatActionState, FormData>(
     createWeeklyStatsBulk,
@@ -102,8 +105,10 @@ export default function BulkStatForm({
   const [weekStart, setWeekStart] = useState(defaultWeekStart);
   const [search, setSearch] = useState("");
   // Ordre de sélection : détermine l'ordre des lignes à remplir.
-  const [selected, setSelected] = useState<string[]>([]);
-  const [values, setValues] = useState<Record<string, RowValues>>({});
+  const [selected, setSelected] = useState<string[]>(preselectedIds);
+  const [values, setValues] = useState<Record<string, RowValues>>(() =>
+    Object.fromEntries(preselectedIds.map((id) => [id, emptyRow()])),
+  );
   const [imports, setImports] = useState<Record<string, ImportStatus>>({});
 
   const errorsById = useMemo(() => {

@@ -4,8 +4,13 @@ import { requireStaff } from "@/lib/session";
 import BulkStatForm from "@/components/BulkStatForm";
 import { currentWeekStart } from "@/lib/week";
 
-export default async function BulkStatsPage() {
+export default async function BulkStatsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ vehicles?: string }>;
+}) {
   const { agencyId, userId } = await requireStaff();
+  const { vehicles: preselectParam } = await searchParams;
 
   // Seuls les véhicules en vente ont des relevés à suivre.
   const vehicles = await prisma.vehicle.findMany({
@@ -27,6 +32,13 @@ export default async function BulkStatsPage() {
     reference: v.reference,
     clientName: `${v.client.firstName} ${v.client.lastName}`,
   }));
+
+  // Pré-sélection éventuelle (bouton « Saisir tous les relevés » du tableau de
+  // bord) : on ne garde que les identifiants réellement autorisés pour l'agent.
+  const allowedIds = new Set(options.map((o) => o.id));
+  const preselectedIds = (preselectParam?.split(",") ?? []).filter((id) =>
+    allowedIds.has(id),
+  );
 
   return (
     <div>
@@ -51,6 +63,7 @@ export default async function BulkStatsPage() {
           <BulkStatForm
             vehicles={options}
             defaultWeekStart={currentWeekStart().toISOString().slice(0, 10)}
+            preselectedIds={preselectedIds}
           />
         </>
       )}
