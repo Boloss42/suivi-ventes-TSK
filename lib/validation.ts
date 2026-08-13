@@ -113,3 +113,22 @@ export const weeklyStatSchema = z.object({
   offers: z.coerce.number().int().min(0).default(0),
   note: z.string().optional(),
 });
+
+// Une ligne du relevé en masse : mêmes compteurs que le relevé unitaire, mais
+// la semaine est commune à tout le lot (validée séparément côté action).
+export const bulkWeeklyStatRowSchema = z.object({
+  vehicleId: z.string().min(1),
+  views: z.coerce.number().int().min(0).default(0),
+  detailViews: z.coerce.number().int().min(0).default(0),
+  contacts: z.coerce.number().int().min(0).default(0),
+  calls: z.coerce.number().int().min(0).default(0),
+  favorites: z.coerce.number().int().min(0).default(0),
+  visits: z.coerce.number().int().min(0).default(0),
+  offers: z.coerce.number().int().min(0).default(0),
+  note: z.string().optional(),
+});
+
+export const bulkWeeklyStatsSchema = z
+  .array(bulkWeeklyStatRowSchema)
+  .min(1, "Sélectionnez au moins un véhicule à relever")
+  .max(100, "100 relevés maximum par lot");

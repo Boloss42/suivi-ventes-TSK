@@ -47,6 +47,12 @@ export default async function VehiclesPage({
         <h1 className="text-xl font-semibold text-ink-900">Véhicules</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Link
+            href="/staff/vehicles/stats/bulk"
+            className="rounded-md border border-ink-200 px-4 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+          >
+            Relevé en masse
+          </Link>
+          <Link
             href="/staff/vehicles/bulk"
             className="rounded-md border border-ink-200 px-4 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
           >
