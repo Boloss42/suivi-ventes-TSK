@@ -52,6 +52,7 @@ export default async function VehicleDetailPage({
     latestStat
       ? {
           views: latestStat.views,
+          detailViews: latestStat.detailViews,
           contacts: latestStat.contacts,
           calls: latestStat.calls,
           favorites: latestStat.favorites,
@@ -62,6 +63,7 @@ export default async function VehicleDetailPage({
     prevStat
       ? {
           views: prevStat.views,
+          detailViews: prevStat.detailViews,
           contacts: prevStat.contacts,
           calls: prevStat.calls,
           favorites: prevStat.favorites,

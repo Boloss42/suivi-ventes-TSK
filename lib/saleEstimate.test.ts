@@ -4,6 +4,7 @@ import type { Diagnostic, StatSnapshot } from "@/lib/diagnostic";
 
 const snap = (o: Partial<StatSnapshot> = {}): StatSnapshot => ({
   views: 0,
+  detailViews: 0,
   contacts: 0,
   calls: 0,
   favorites: 0,

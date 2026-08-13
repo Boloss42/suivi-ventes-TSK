@@ -3,15 +3,20 @@
 // produit un indice de vendabilité (0-100), un verdict en langage naturel et
 // une incitation éventuelle à baisser le prix.
 //
-// Principe directeur : le prix est le levier n°1. L'indice combine deux
-// facteurs : la traction statistique (vues, contacts, visites, offres) et un
-// coefficient de prix qui pénalise l'indice à mesure que le tarif dépasse le
-// prix conseillé. Tout signal négatif (peu de visibilité, beaucoup de vues sans
-// contact, contacts sans visite, ancienneté sans traction) conclut sur un tarif
-// trop élevé ; seules les offres et les visites donnent un verdict positif.
+// Principe directeur : le prix est le levier n°1. L'indice combine la traction
+// statistique (apparitions, vues, contacts, visites, offres) et deux
+// coefficients :
+//   - un coefficient de prix qui pénalise l'indice à mesure que le tarif
+//     dépasse le prix conseillé ;
+//   - un coefficient de TAUX DE CLIC (Vues ÷ Apparitions) : une annonce très
+//     vue en liste mais peu cliquée n'accroche pas au premier regard
+//     (photo/titre/prix affiché) — signal fort, souvent lié au prix.
+// Tout signal négatif conclut sur un tarif/une annonce à revoir ; seules les
+// offres et les visites donnent un verdict positif.
 
 export type StatSnapshot = {
-  views: number;
+  views: number; // « Apparitions » : nb d'affichages dans les résultats
+  detailViews: number; // « Vues » : nb d'ouvertures réelles de l'annonce
   contacts: number;
   calls: number;
   favorites: number;
@@ -28,6 +33,16 @@ export type Diagnostic = {
   suggestPriceDrop: boolean;
 };
 
+export type AnalyzeOptions = {
+  mandateDays?: number;
+  price?: number;
+  advisedPrice?: number | null;
+  // Le taux de clic n'est exploité que si les Vues sont réellement suivies
+  // pour ce véhicule (sinon les relevés historiques, à detailViews = 0,
+  // seraient jugés à tort « peu cliqués »).
+  vuesTracked?: boolean;
+};
+
 // Seuils regroupés pour ajustement facile.
 const THRESHOLDS = {
   viewsHigh: 60,
@@ -37,12 +52,27 @@ const THRESHOLDS = {
   oldMandateDays: 42, // ~6 semaines
 };
 
-const WEIGHTS = { offers: 45, visits: 18, calls: 7, contacts: 4, viewsCap: 120, viewsFactor: 0.15 };
+const WEIGHTS = {
+  offers: 45,
+  visits: 18,
+  calls: 7,
+  contacts: 4,
+  detailViews: 0.4, // « Vues » : signal d'intérêt réel, entre apparitions et contacts
+  detailViewsCap: 90,
+  viewsCap: 120,
+  viewsFactor: 0.15, // « Apparitions » : simple visibilité, faible poids
+};
 
 // Coefficient de prix : 1 tant que le tarif est au niveau (ou en dessous) du
 // prix conseillé, puis décroît de ~2 points par % de dépassement, plancher
 // à 0,45. Ex. : +5 % → 0,90 · +10 % → 0,80 · +20 % → 0,60 · +27,5 % → 0,45.
 const PRICE = { penaltyPerPct: 0.02, floor: 0.45 };
+
+// Taux de clic (Vues ÷ Apparitions). En dessous de `minApparitions` sur la
+// semaine, le ratio n'est pas fiable. `low` = seuil « n'accroche pas » ;
+// `good` = seuil au-delà duquel aucune pénalité. Entre les deux, pénalité
+// linéaire jusqu'au plancher `floor`.
+const CTR = { minApparitions: 50, low: 0.015, good: 0.04, floor: 0.6 };
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -54,6 +84,7 @@ function baseScore(s: StatSnapshot) {
     s.visits * WEIGHTS.visits +
     s.calls * WEIGHTS.calls +
     s.contacts * WEIGHTS.contacts +
+    Math.min(s.detailViews, WEIGHTS.detailViewsCap) * WEIGHTS.detailViews +
     Math.min(s.views, WEIGHTS.viewsCap) * WEIGHTS.viewsFactor;
   return Math.round(clamp(raw, 0, 100));
 }
@@ -71,22 +102,49 @@ function priceFactor(overagePct: number) {
 }
 
 /**
+ * Taux de clic de la semaine (Vues ÷ Apparitions), ou null si les Vues ne sont
+ * pas suivies ou s'il y a trop peu d'apparitions pour que le ratio soit fiable.
+ */
+function clickThroughRate(
+  views: number,
+  detailViews: number,
+  vuesTracked?: boolean,
+): number | null {
+  if (!vuesTracked || views < CTR.minApparitions) return null;
+  return detailViews / views;
+}
+
+/** Coefficient appliqué à l'indice selon le taux de clic (1 si non exploitable). */
+function ctrFactor(ctr: number | null) {
+  if (ctr === null) return 1;
+  if (ctr >= CTR.good) return 1;
+  if (ctr <= CTR.low) return CTR.floor;
+  const t = (ctr - CTR.low) / (CTR.good - CTR.low);
+  return CTR.floor + t * (1 - CTR.floor);
+}
+
+/**
  * @param latest    Dernier relevé hebdomadaire (ou null si aucun).
- * @param opts      Contexte optionnel : ancienneté du mandat, prix / prix de conseil.
+ * @param opts      Contexte optionnel : ancienneté du mandat, prix / prix de
+ *                  conseil, et si les Vues sont suivies (pour le taux de clic).
  */
 export function analyzeVehicle(
   latest: StatSnapshot | null,
-  opts?: { mandateDays?: number; price?: number; advisedPrice?: number | null },
+  opts?: AnalyzeOptions,
 ): Diagnostic | null {
   if (!latest) return null;
 
-  const { views, contacts, visits, offers } = latest;
+  const { views, detailViews, contacts, visits, offers } = latest;
 
-  // Corrélation prix ↔ stats : l'indice statistique brut est pondéré par le
-  // coefficient de prix, de sorte qu'un même niveau de traction donne un
-  // pourcentage de vente d'autant plus faible que le tarif dépasse le conseil.
+  // Corrélation prix ↔ stats et taux de clic : l'indice statistique brut est
+  // pondéré par ces deux coefficients, de sorte qu'un même niveau de traction
+  // donne un pourcentage de vente d'autant plus faible que le tarif dépasse le
+  // conseil ou que l'annonce accroche peu (peu de clics par apparition).
   const overagePct = priceOveragePct(opts?.price, opts?.advisedPrice);
-  const base = Math.round(clamp(baseScore(latest) * priceFactor(overagePct), 0, 100));
+  const ctr = clickThroughRate(views, detailViews, opts?.vuesTracked);
+  const base = Math.round(
+    clamp(baseScore(latest) * priceFactor(overagePct) * ctrFactor(ctr), 0, 100),
+  );
 
   // Écart au prix de conseil, pour enrichir les verdicts « prix trop élevé ».
   let priceGapText = "";
@@ -115,7 +173,19 @@ export function analyzeVehicle(
     };
   }
 
-  // 3. Beaucoup vue mais peu de contacts → prix trop élevé.
+  // 3. Beaucoup d'apparitions mais peu de clics (faible taux de clic) →
+  //    l'annonce n'accroche pas au premier regard (photo / titre / prix affiché).
+  if (ctr !== null && ctr < CTR.low) {
+    return {
+      score: Math.min(base, 28),
+      verdict: `Votre annonce apparaît beaucoup mais est peu cliquée (~${Math.round(ctr * 100)} % d'ouvertures) : au premier coup d'œil — photo, titre ou prix affiché — elle n'accroche pas. Le prix est le plus souvent en cause${priceGapText}.`,
+      tone: "bad",
+      suggestPriceDrop: true,
+    };
+  }
+
+  // 4. Beaucoup vue mais peu de contacts → une fois l'annonce ouverte, le prix
+  //    (ou le contenu) déçoit et coupe l'intérêt.
   if (views >= THRESHOLDS.viewsHigh && contacts <= THRESHOLDS.contactsLow) {
     return {
       score: Math.min(base, 30),
@@ -125,7 +195,7 @@ export function analyzeVehicle(
     };
   }
 
-  // 4. Peu de visibilité → le tarif fait sortir des recherches des acheteurs.
+  // 5. Peu de visibilité → le tarif fait sortir des recherches des acheteurs.
   if (views < THRESHOLDS.viewsLow) {
     return {
       score: Math.min(base, 30),
@@ -135,7 +205,7 @@ export function analyzeVehicle(
     };
   }
 
-  // 5. Des contacts mais aucune visite → le prix stoppe l'intérêt avant la visite.
+  // 6. Des contacts mais aucune visite → le prix stoppe l'intérêt avant la visite.
   if (contacts >= THRESHOLDS.contactsSome && visits === 0) {
     return {
       score: Math.min(base, 35),
@@ -145,7 +215,7 @@ export function analyzeVehicle(
     };
   }
 
-  // 6. Rien de décisif : phrase d'attente, sauf mandat déjà ancien sans traction.
+  // 7. Rien de décisif : phrase d'attente, sauf mandat déjà ancien sans traction.
   if ((opts?.mandateDays ?? 0) > THRESHOLDS.oldMandateDays) {
     return {
       score: Math.min(base, 40),
@@ -177,6 +247,7 @@ export function weeklyActivity(
   if (!latest || !previous) return null;
   return {
     views: Math.max(0, latest.views - previous.views),
+    detailViews: Math.max(0, latest.detailViews - previous.detailViews),
     contacts: Math.max(0, latest.contacts - previous.contacts),
     calls: Math.max(0, latest.calls - previous.calls),
     favorites: Math.max(0, latest.favorites - previous.favorites),
@@ -194,9 +265,12 @@ export function weeklyActivity(
 export function diagnoseFromSnapshots(
   latest: StatSnapshot | null,
   previous: StatSnapshot | null,
-  opts?: { mandateDays?: number; price?: number; advisedPrice?: number | null },
+  opts?: Omit<AnalyzeOptions, "vuesTracked">,
 ): Diagnostic | null {
   const weekly = weeklyActivity(latest, previous);
   if (!weekly) return null;
-  return analyzeVehicle(weekly, opts);
+  // Les Vues sont « suivies » dès que le dernier relevé cumulé en comporte :
+  // sinon (véhicules historiques à 0), on n'exploite pas le taux de clic.
+  const vuesTracked = (latest?.detailViews ?? 0) > 0;
+  return analyzeVehicle(weekly, { ...opts, vuesTracked });
 }
