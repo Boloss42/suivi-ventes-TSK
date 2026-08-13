@@ -27,6 +27,7 @@ export default async function NewStatPage({
         action={createWeeklyStat}
         submitLabel="Enregistrer le relevé"
         vehicleId={vehicle.id}
+        showImport
         defaultValues={{
           weekStart: currentWeekStart().toISOString().slice(0, 10),
           views: 0,
