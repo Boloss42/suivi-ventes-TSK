@@ -84,7 +84,8 @@ export default async function VehicleDetailPage({
   const lastWeek = vehicle.weeklyStats[0];
   const prevWeek = vehicle.weeklyStats[1];
   const summaryMetrics: SummaryMetric[] = [
-    { label: "Vues", total: lastWeek?.views ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.views - prevWeek.views : null },
+    { label: "Apparitions", total: lastWeek?.views ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.views - prevWeek.views : null },
+    { label: "Vues", total: lastWeek?.detailViews ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.detailViews - prevWeek.detailViews : null },
     { label: "Contacts", total: lastWeek?.contacts ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.contacts - prevWeek.contacts : null },
     { label: "Appels", total: lastWeek?.calls ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.calls - prevWeek.calls : null },
     { label: "Favoris", total: lastWeek?.favorites ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.favorites - prevWeek.favorites : null },
@@ -98,6 +99,7 @@ export default async function VehicleDetailPage({
   const chartData: StatPoint[] = [...vehicle.weeklyStats].reverse().map((s) => ({
     week: formatWeekShort(s.weekStart),
     views: s.views,
+    detailViews: s.detailViews,
     contacts: s.contacts,
     calls: s.calls,
     favorites: s.favorites,
@@ -355,6 +357,7 @@ export default async function VehicleDetailPage({
               data={chartData}
               latestValues={{
                 views: latestStat?.views,
+                detailViews: latestStat?.detailViews,
                 contacts: latestStat?.contacts,
                 calls: latestStat?.calls,
                 favorites: latestStat?.favorites,
@@ -379,6 +382,7 @@ export default async function VehicleDetailPage({
                   <tr>
                     <th className="py-2 pr-4 font-medium">Semaine</th>
                     <th className="py-2 pr-4 font-medium">Apparitions</th>
+                    <th className="py-2 pr-4 font-medium">Vues</th>
                     <th className="py-2 pr-4 font-medium">Contacts</th>
                     <th className="py-2 pr-4 font-medium">Appels</th>
                     <th className="py-2 pr-4 font-medium">Favoris</th>
@@ -392,6 +396,7 @@ export default async function VehicleDetailPage({
                     <tr key={stat.id} className="border-b border-ink-50 last:border-0">
                       <td className="py-2 pr-4 text-ink-800">{formatDate(stat.weekStart)}</td>
                       <td className="py-2 pr-4 text-ink-600">{stat.views}</td>
+                      <td className="py-2 pr-4 text-ink-600">{stat.detailViews}</td>
                       <td className="py-2 pr-4 text-ink-600">{stat.contacts}</td>
                       <td className="py-2 pr-4 text-ink-600">{stat.calls}</td>
                       <td className="py-2 pr-4 text-ink-600">{stat.favorites}</td>

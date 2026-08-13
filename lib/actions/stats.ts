@@ -15,6 +15,7 @@ function parseStatForm(formData: FormData) {
     vehicleId: formData.get("vehicleId"),
     weekStart: formData.get("weekStart"),
     views: formData.get("views"),
+    detailViews: formData.get("detailViews"),
     contacts: formData.get("contacts"),
     calls: formData.get("calls"),
     favorites: formData.get("favorites"),
@@ -52,6 +53,7 @@ export async function createWeeklyStat(
           vehicleId: parsed.data.vehicleId,
           weekStart,
           views: parsed.data.views,
+          detailViews: parsed.data.detailViews,
           contacts: parsed.data.contacts,
           calls: parsed.data.calls,
           favorites: parsed.data.favorites,
@@ -112,6 +114,7 @@ export async function updateWeeklyStat(
       data: {
         weekStart,
         views: parsed.data.views,
+        detailViews: parsed.data.detailViews,
         contacts: parsed.data.contacts,
         calls: parsed.data.calls,
         favorites: parsed.data.favorites,

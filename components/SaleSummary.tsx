@@ -30,7 +30,7 @@ export default function SaleSummary({
         </span>
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 lg:grid-cols-7">
         {metrics.map((m) => (
           <div key={m.label}>
             <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{m.label}</dt>

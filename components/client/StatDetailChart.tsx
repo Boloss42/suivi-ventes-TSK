@@ -14,6 +14,7 @@ import {
 export type StatPoint = {
   week: string;
   views: number;
+  detailViews: number;
   contacts: number;
   calls: number;
   favorites: number;
@@ -23,6 +24,7 @@ export type StatPoint = {
 
 const METRICS = [
   { key: "views", label: "Apparitions", color: "#ec028c" },
+  { key: "detailViews", label: "Vues", color: "#2563eb" },
   { key: "contacts", label: "Contacts", color: "#c05621" },
   { key: "calls", label: "Appels", color: "#2f855a" },
   { key: "favorites", label: "Favoris", color: "#b7791f" },
@@ -46,7 +48,7 @@ export default function StatDetailChart({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {METRICS.map((m) => (
           <button
             key={m.key}

@@ -52,6 +52,7 @@ export default async function ClientVehicleDetailPage({
   const chartData: StatPoint[] = vehicle.weeklyStats.map((s) => ({
     week: formatWeekShort(s.weekStart),
     views: s.views,
+    detailViews: s.detailViews,
     contacts: s.contacts,
     calls: s.calls,
     favorites: s.favorites,
@@ -95,7 +96,8 @@ export default async function ClientVehicleDetailPage({
   const lastWeek = vehicle.weeklyStats.at(-1); // le plus récent (relevés triés asc)
   const prevWeek = vehicle.weeklyStats.at(-2);
   const summaryMetrics: SummaryMetric[] = [
-    { label: "Vues", total: lastWeek?.views ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.views - prevWeek.views : null },
+    { label: "Apparitions", total: lastWeek?.views ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.views - prevWeek.views : null },
+    { label: "Vues", total: lastWeek?.detailViews ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.detailViews - prevWeek.detailViews : null },
     { label: "Contacts", total: lastWeek?.contacts ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.contacts - prevWeek.contacts : null },
     { label: "Appels", total: lastWeek?.calls ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.calls - prevWeek.calls : null },
     { label: "Favoris", total: lastWeek?.favorites ?? 0, weekDelta: lastWeek && prevWeek ? lastWeek.favorites - prevWeek.favorites : null },
@@ -392,6 +394,7 @@ export default async function ClientVehicleDetailPage({
               data={chartData}
               latestValues={{
                 views: latestStat?.views,
+                detailViews: latestStat?.detailViews,
                 contacts: latestStat?.contacts,
                 calls: latestStat?.calls,
                 favorites: latestStat?.favorites,

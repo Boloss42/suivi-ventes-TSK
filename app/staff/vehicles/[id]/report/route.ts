@@ -13,7 +13,15 @@ import {
 // react-pdf s'appuie sur des API Node (fs, streams) : runtime Node obligatoire.
 export const runtime = "nodejs";
 
-const METRIC_KEYS: ReportMetricKey[] = ["views", "contacts", "calls", "favorites", "visits", "offers"];
+const METRIC_KEYS: ReportMetricKey[] = [
+  "views",
+  "detailViews",
+  "contacts",
+  "calls",
+  "favorites",
+  "visits",
+  "offers",
+];
 
 // Formatage « à la main » avec une espace simple : react-pdf ne gère pas les
 // espaces insécables étroites (U+202F) posées par Intl.NumberFormat("fr-FR").

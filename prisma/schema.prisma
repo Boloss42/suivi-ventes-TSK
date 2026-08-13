@@ -173,7 +173,10 @@ model WeeklyStat {
   vehicleId String
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   weekStart DateTime
-  views     Int      @default(0)
+  // « Apparitions » : nombre d'affichages de l'annonce dans les résultats.
+  views       Int    @default(0)
+  // « Vues » : nombre d'ouvertures réelles de l'annonce (distinct des apparitions).
+  detailViews Int    @default(0)
   contacts  Int      @default(0)
   calls     Int      @default(0)
   favorites Int      @default(0)

@@ -30,6 +30,7 @@ export default async function NewStatPage({
         defaultValues={{
           weekStart: currentWeekStart().toISOString().slice(0, 10),
           views: 0,
+          detailViews: 0,
           contacts: 0,
           calls: 0,
           favorites: 0,

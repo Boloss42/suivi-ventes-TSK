@@ -105,6 +105,7 @@ export const weeklyStatSchema = z.object({
   vehicleId: z.string().min(1),
   weekStart: z.string().min(1, "Semaine requise"),
   views: z.coerce.number().int().min(0).default(0),
+  detailViews: z.coerce.number().int().min(0).default(0),
   contacts: z.coerce.number().int().min(0).default(0),
   calls: z.coerce.number().int().min(0).default(0),
   favorites: z.coerce.number().int().min(0).default(0),

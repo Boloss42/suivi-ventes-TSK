@@ -13,7 +13,14 @@ import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
  * précédent). Les données sont fournies déjà calculées par la route.
  */
 
-export type ReportMetricKey = "views" | "contacts" | "calls" | "favorites" | "visits" | "offers";
+export type ReportMetricKey =
+  | "views"
+  | "detailViews"
+  | "contacts"
+  | "calls"
+  | "favorites"
+  | "visits"
+  | "offers";
 
 export type ReportRow = {
   week: string; // date déjà formatée (jj/mm/aaaa)
@@ -44,7 +51,8 @@ const MUTED = "#7a7b90";
 const BORDER = "#e5e5ec";
 
 const METRICS: { key: ReportMetricKey; label: string }[] = [
-  { key: "views", label: "Vues" },
+  { key: "views", label: "Apparitions" },
+  { key: "detailViews", label: "Vues" },
   { key: "contacts", label: "Contacts" },
   { key: "calls", label: "Appels" },
   { key: "favorites", label: "Favoris" },
@@ -67,7 +75,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 8, color: MUTED, textTransform: "uppercase", letterSpacing: 0.4 },
   infoValue: { fontSize: 10, marginTop: 2 },
   totalsRow: { flexDirection: "row", marginBottom: 20 },
-  totalCell: { width: "16.66%", borderWidth: 1, borderColor: BORDER, borderRadius: 4, padding: 8, marginRight: 4 },
+  totalCell: { width: "13%", borderWidth: 1, borderColor: BORDER, borderRadius: 4, padding: 6, marginRight: 4 },
   totalLabel: { fontSize: 7, color: MUTED, textTransform: "uppercase" },
   totalValue: { fontSize: 14, fontFamily: "Helvetica-Bold", marginTop: 3 },
   table: { borderWidth: 1, borderColor: BORDER, borderRadius: 4 },
@@ -77,7 +85,7 @@ const styles = StyleSheet.create({
   th: { padding: 6, fontSize: 8, fontFamily: "Helvetica-Bold", color: MUTED },
   td: { padding: 6, fontSize: 9 },
   colWeek: { width: "16%" },
-  colMetric: { width: "14%" },
+  colMetric: { width: "12%" },
   cellValue: { fontFamily: "Helvetica-Bold" },
   cellGain: { fontSize: 7, color: MUTED, marginTop: 1 },
   gainUp: { color: "#059669" },

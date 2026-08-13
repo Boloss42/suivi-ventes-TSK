@@ -37,6 +37,7 @@ export default async function EditStatPage({
         defaultValues={{
           weekStart: stat.weekStart.toISOString().slice(0, 10),
           views: stat.views,
+          detailViews: stat.detailViews,
           contacts: stat.contacts,
           calls: stat.calls,
           favorites: stat.favorites,

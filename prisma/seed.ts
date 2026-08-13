@@ -255,6 +255,9 @@ async function main() {
         vehicleId: s.vehicleId,
         weekStart: weeksAgo(s.weeksBack),
         views: s.views,
+        // « Vues » (ouvertures réelles) : une fraction des apparitions, pour un
+        // jeu de démo réaliste. Reste cumulé et croissant comme les apparitions.
+        detailViews: Math.round(s.views * 0.55),
         contacts: s.contacts,
         calls: s.calls,
         favorites: s.favorites,
