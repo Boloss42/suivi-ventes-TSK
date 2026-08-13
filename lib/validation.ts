@@ -1,5 +1,21 @@
 import { z } from "zod";
 
+/**
+ * URL http(s) uniquement. `z.string().url()` seul accepte aussi les schémas
+ * `javascript:` et `data:` — dangereux pour un lien rendu en <a href> (surtout
+ * sur la page publique de partage : XSS stocké). On restreint donc le protocole.
+ */
+export const httpUrlSchema = z
+  .string()
+  .url("Lien invalide")
+  .refine((value) => {
+    try {
+      return ["http:", "https:"].includes(new URL(value).protocol);
+    } catch {
+      return false;
+    }
+  }, "Le lien doit commencer par http:// ou https://");
+
 export const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
   password: z.string().min(1, "Mot de passe requis"),
@@ -34,7 +50,7 @@ export const vehicleStatusValues = ["EN_VENTE", "VENDU", "RETIRE"] as const;
 
 export const listingUrlSchema = z.object({
   label: z.string().min(1, "Nom de la plateforme requis"),
-  url: z.string().url("Lien invalide"),
+  url: httpUrlSchema,
 });
 
 export const vehicleSchema = z.object({

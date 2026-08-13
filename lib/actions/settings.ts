@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
+import { httpUrlSchema } from "@/lib/validation";
 
 const settingsSchema = z.object({
-  googleReviewUrl: z.union([z.string().url("Lien invalide"), z.literal("")]),
+  googleReviewUrl: z.union([httpUrlSchema, z.literal("")]),
 });
 
 export type SettingsState = { error?: string; success?: boolean };

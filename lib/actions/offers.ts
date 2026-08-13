@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import type { OfferStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import { offerSchema } from "@/lib/validation";
 import { formatPrice } from "@/lib/format";
+import { getBaseUrl } from "@/lib/appUrl";
 import { sendOfferReceivedEmail } from "@/lib/emails/offerReceived";
 
 export type CreateOfferState = { error?: string; success?: boolean };
@@ -74,16 +74,13 @@ export async function createOffer(
     where: { id: userId },
     select: { phone: true },
   });
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   await sendOfferReceivedEmail(vehicle.client.user.email, {
     firstName: vehicle.client.firstName,
     vehicleLabel,
     amount: amountText,
     buyerName: parsed.data.buyerName ?? null,
     advisorPhone: advisor?.phone,
-    link: `${proto}://${host}/client/vehicles/${vehicle.id}`,
+    link: `${await getBaseUrl()}/client/vehicles/${vehicle.id}`,
   });
 
   revalidatePath(`/staff/vehicles/${vehicle.id}`);

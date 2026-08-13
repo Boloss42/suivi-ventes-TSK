@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
-import { headers } from "next/headers";
 import QRCode from "qrcode";
+import { getBaseUrl } from "@/lib/appUrl";
 
 const INVITE_VALIDITY_DAYS = 7;
 
@@ -12,20 +12,14 @@ export function inviteExpiresAt() {
   return new Date(Date.now() + INVITE_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
 }
 
-/** URL absolue de la page d'activation, déduite de la requête en cours. */
+/** URL absolue de la page d'activation (domaine canonique, cf. getBaseUrl). */
 export async function buildInviteUrl(token: string) {
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}/activate/${token}`;
+  return `${await getBaseUrl()}/activate/${token}`;
 }
 
-/** URL absolue du lien de partage public d'une annonce, déduite de la requête. */
+/** URL absolue du lien de partage public d'une annonce (domaine canonique). */
 export async function buildShareUrl(token: string) {
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}/a/${token}`;
+  return `${await getBaseUrl()}/a/${token}`;
 }
 
 /** QR code de l'URL fournie, au format SVG (chaîne de balisage à injecter directement). */

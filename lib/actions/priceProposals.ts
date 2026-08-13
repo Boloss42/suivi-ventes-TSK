@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireClient, requireStaff } from "@/lib/session";
 import { priceProposalSchema } from "@/lib/validation";
 import { formatPrice } from "@/lib/format";
+import { getBaseUrl } from "@/lib/appUrl";
 import { sendPriceSuggestionEmail } from "@/lib/emails/priceSuggestion";
 
 export type ProposePriceState = { error?: string; success?: boolean };
@@ -180,9 +180,6 @@ export async function suggestPriceDropToClient(
   ]);
 
   // Email (non bloquant : l'échec n'empêche pas la notification in-app).
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   await sendPriceSuggestionEmail(vehicle.client.user.email, {
     firstName: vehicle.client.firstName,
     vehicleLabel,
@@ -191,7 +188,7 @@ export async function suggestPriceDropToClient(
     message: parsed.data.message ?? null,
     advisorName: advisor?.firstName,
     advisorPhone: advisor?.phone,
-    link: `${proto}://${host}/client/vehicles/${vehicle.id}`,
+    link: `${await getBaseUrl()}/client/vehicles/${vehicle.id}`,
   });
 
   revalidatePath(`/staff/vehicles/${vehicle.id}`);

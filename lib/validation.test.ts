@@ -5,6 +5,8 @@ import {
   activateSchema,
   forgotPasswordSchema,
   vehicleSchema,
+  httpUrlSchema,
+  listingUrlSchema,
 } from "@/lib/validation";
 
 describe("clientSchema", () => {
@@ -53,6 +55,27 @@ describe("forgotPasswordSchema", () => {
   it("valide un email correct et rejette un email incorrect", () => {
     expect(forgotPasswordSchema.safeParse({ email: "a@b.fr" }).success).toBe(true);
     expect(forgotPasswordSchema.safeParse({ email: "nope" }).success).toBe(false);
+  });
+});
+
+describe("httpUrlSchema (anti-XSS liens)", () => {
+  it("accepte http et https", () => {
+    expect(httpUrlSchema.safeParse("http://exemple.fr").success).toBe(true);
+    expect(httpUrlSchema.safeParse("https://leboncoin.fr/annonce/123").success).toBe(true);
+  });
+
+  it("rejette les schémas dangereux (javascript:, data:)", () => {
+    expect(httpUrlSchema.safeParse("javascript:alert(1)").success).toBe(false);
+    expect(httpUrlSchema.safeParse("data:text/html,<script>alert(1)</script>").success).toBe(false);
+  });
+
+  it("rejette une chaîne non-URL", () => {
+    expect(httpUrlSchema.safeParse("pas une url").success).toBe(false);
+  });
+
+  it("propage la restriction au lien d'annonce", () => {
+    expect(listingUrlSchema.safeParse({ label: "LBC", url: "javascript:alert(1)" }).success).toBe(false);
+    expect(listingUrlSchema.safeParse({ label: "LBC", url: "https://leboncoin.fr/x" }).success).toBe(true);
   });
 });
 
