@@ -17,11 +17,14 @@ import OffersPanel, { type OfferItem } from "@/components/staff/OffersPanel";
 
 export default async function VehicleDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ photoError?: string }>;
 }) {
   const { agencyId, userId } = await requireStaff();
   const { id } = await params;
+  const { photoError } = await searchParams;
 
   const vehicle = await prisma.vehicle.findFirst({
     where: { id, agencyId, client: { assignedStaffId: userId } },
@@ -121,6 +124,14 @@ export default async function VehicleDetailPage({
 
   return (
     <div>
+      {photoError && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Les photos n&apos;ont pas pu être ajoutées : le stockage est momentanément
+          indisponible. Le véhicule est bien enregistré — réessayez d&apos;ajouter les
+          photos depuis « Modifier ».
+        </div>
+      )}
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-1 flex flex-wrap items-center gap-3">

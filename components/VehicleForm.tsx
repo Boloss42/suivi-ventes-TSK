@@ -91,6 +91,12 @@ export default function VehicleForm({
           </>
         )}
 
+        {state.success.photoError && (
+          <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            {state.success.photoError}
+          </p>
+        )}
+
         <Link
           href={`/staff/vehicles/${state.success.vehicleId}`}
           className="inline-block rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"

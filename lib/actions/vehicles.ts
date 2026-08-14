@@ -15,8 +15,17 @@ export type VehicleActionState = {
   success?: {
     vehicleId: string;
     newClient?: { email: string; inviteUrl: string; qrSvg: string };
+    // Message si le véhicule est bien enregistré mais que les photos ont échoué.
+    photoError?: string;
   };
 };
+
+// Taille max acceptée par photo (cohérent avec serverActions.bodySizeLimit
+// dans next.config.ts, qui borne la requête entière).
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
+
+const PHOTO_STORAGE_ERROR =
+  "Les photos n'ont pas pu être enregistrées : le stockage est momentanément indisponible. Le véhicule est bien enregistré — réessayez d'ajouter les photos depuis « Modifier ».";
 
 function extractListingUrls(formData: FormData) {
   const labels = formData.getAll("listingLabel") as string[];
@@ -43,22 +52,44 @@ function parseVehicleForm(formData: FormData) {
   });
 }
 
-async function savePhotos(vehicleId: string, formData: FormData) {
+/**
+ * Enregistre les photos jointes. Renvoie un message d'erreur à afficher en cas
+ * d'échec du stockage, ou `null` si tout s'est bien passé (ou aucune photo).
+ *
+ * Robustesse : un échec R2 (variable manquante, clé invalide, réseau) ne doit
+ * plus faire planter toute la page (« Application error »). On journalise la
+ * cause réelle (visible dans les logs Railway) et on remonte un message propre ;
+ * le véhicule, lui, reste enregistré.
+ */
+async function savePhotos(vehicleId: string, formData: FormData): Promise<string | null> {
   const files = formData.getAll("photos") as File[];
   const validFiles = files.filter((f) => f instanceof File && f.size > 0);
-  if (validFiles.length === 0) return;
+  if (validFiles.length === 0) return null;
 
-  // Écrit les fichiers en parallèle et ne fait que 2 requêtes DB au total
-  // (au lieu d'un count + create par photo, très coûteux en latence réseau
-  // vers une base distante comme Neon).
-  const startOrder = await prisma.photo.count({ where: { vehicleId } });
-  const urls = await Promise.all(
-    validFiles.map((file) => saveVehiclePhoto(vehicleId, file)),
-  );
+  const tooBig = validFiles.find((f) => f.size > MAX_PHOTO_BYTES);
+  if (tooBig) {
+    return `La photo « ${tooBig.name || "sans nom"} » dépasse 15 Mo. Réduisez-la puis réessayez.`;
+  }
 
-  await prisma.photo.createMany({
-    data: urls.map((url, i) => ({ vehicleId, url, order: startOrder + i })),
-  });
+  try {
+    // Écrit les fichiers en parallèle et ne fait que 2 requêtes DB au total
+    // (au lieu d'un count + create par photo, très coûteux en latence réseau
+    // vers une base distante comme Neon).
+    const startOrder = await prisma.photo.count({ where: { vehicleId } });
+    const urls = await Promise.all(
+      validFiles.map((file) => saveVehiclePhoto(vehicleId, file)),
+    );
+
+    await prisma.photo.createMany({
+      data: urls.map((url, i) => ({ vehicleId, url, order: startOrder + i })),
+    });
+    return null;
+  } catch (error) {
+    // Log explicite : permet de retrouver la cause exacte dans les logs Railway
+    // (ex. « Variable d'environnement R2_… manquante », erreur S3 403…).
+    console.error("[savePhotos] échec de l'enregistrement des photos (R2) :", error);
+    return PHOTO_STORAGE_ERROR;
+  }
 }
 
 /** Crée le client (+ compte de connexion) à la volée depuis le formulaire véhicule. */
@@ -174,7 +205,7 @@ export async function createVehicle(
     },
   });
 
-  await savePhotos(vehicle.id, formData);
+  const photoError = await savePhotos(vehicle.id, formData);
 
   revalidatePath("/staff/vehicles");
   revalidatePath("/staff/clients");
@@ -183,10 +214,14 @@ export async function createVehicle(
   if (newClientCredentials) {
     // On ne redirige pas immédiatement : les identifiants générés doivent
     // être affichés une fois au staff avant de continuer vers la fiche.
-    return { success: { vehicleId: vehicle.id, newClient: newClientCredentials } };
+    return {
+      success: { vehicleId: vehicle.id, newClient: newClientCredentials, photoError: photoError ?? undefined },
+    };
   }
 
-  redirect(`/staff/vehicles/${vehicle.id}`);
+  // Le véhicule est créé quoi qu'il arrive ; on signale l'échec éventuel des
+  // photos via la fiche plutôt que par une page d'erreur.
+  redirect(`/staff/vehicles/${vehicle.id}${photoError ? "?photoError=1" : ""}`);
 }
 
 export type BulkVehicleActionState = {
@@ -376,11 +411,11 @@ export async function updateVehicle(
 
   await prisma.$transaction(ops);
 
-  await savePhotos(vehicleId, formData);
+  const photoError = await savePhotos(vehicleId, formData);
 
   revalidatePath("/staff/vehicles");
   revalidatePath(`/staff/vehicles/${vehicleId}`);
-  redirect(`/staff/vehicles/${vehicleId}`);
+  redirect(`/staff/vehicles/${vehicleId}${photoError ? "?photoError=1" : ""}`);
 }
 
 export async function deleteVehicle(formData: FormData) {
