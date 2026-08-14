@@ -17,10 +17,19 @@ const ALLOWED_TYPES: Record<string, string> = {
  */
 
 function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
+  const raw = process.env[name];
+  if (!raw) {
     throw new Error(
       `Variable d'environnement ${name} manquante : le stockage des photos (R2) n'est pas configuré.`,
+    );
+  }
+  // Tolère les erreurs de copier-coller fréquentes qui rendaient l'endpoint R2
+  // invalide (ex. R2_ACCOUNT_ID=<votre-id> → URL « https://<...>.r2… ») :
+  // on retire les espaces autour et d'éventuels chevrons « <…> » de placeholder.
+  const value = raw.trim().replace(/^<([\s\S]*)>$/, "$1").trim();
+  if (!value) {
+    throw new Error(
+      `Variable d'environnement ${name} vide : le stockage des photos (R2) n'est pas configuré.`,
     );
   }
   return value;
