@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   regenerateAgencyStaffInviteLink,
@@ -55,6 +55,11 @@ export default function AgencyStaffRow({
     regenerateWithAgency,
     {},
   );
+  // Confirmation intégrée à l'interface plutôt que window.confirm() : cette
+  // API navigateur peut être neutralisée en silence par un bloqueur de
+  // popups (renvoie `false` sans jamais rien afficher), ce qui faisait
+  // échouer la suppression sans la moindre trace pour l'administrateur.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
     <div className="py-4">
@@ -72,19 +77,36 @@ export default function AgencyStaffRow({
               <RegenerateButton />
             </form>
           )}
-          <form
-            action={deleteWithAgency}
-            onSubmit={(e) => {
-              if (!confirm(`Supprimer le compte agent ${email} ?`)) {
-                e.preventDefault();
-              }
-            }}
-          >
-            <input type="hidden" name="userId" value={userId} />
-            <DeleteButton />
-          </form>
+          {confirmingDelete ? (
+            <div className="flex items-center gap-2">
+              <form action={deleteWithAgency}>
+                <input type="hidden" name="userId" value={userId} />
+                <DeleteButton />
+              </form>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-ink-50"
+              >
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+            >
+              Supprimer
+            </button>
+          )}
         </div>
       </div>
+      {confirmingDelete && (
+        <p className="mt-2 text-right text-xs text-ink-500">
+          Supprimer le compte agent {email} ?
+        </p>
+      )}
 
       {state.error && <p className="mt-2 text-sm text-red-700">{state.error}</p>}
       {state.inviteUrl && state.qrSvg && (

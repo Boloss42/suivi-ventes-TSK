@@ -15,13 +15,6 @@ export default function DeleteVehicleButton({
   const [isPending, startTransition] = useTransition();
 
   function handleConfirm() {
-    const reallySure = confirm(
-      `Suppression définitive de « ${vehicleLabel} ». Cette action supprimera aussi son historique de relevés, ses photos et les propositions de prix associées, sans retour possible. Continuer ?`,
-    );
-    if (!reallySure) {
-      setConfirming(false);
-      return;
-    }
     const formData = new FormData();
     formData.set("vehicleId", vehicleId);
     setError(null);
@@ -39,23 +32,32 @@ export default function DeleteVehicleButton({
 
   if (confirming) {
     return (
-      <div className="flex items-center justify-end gap-1">
-        <button
-          type="button"
-          onClick={handleConfirm}
-          disabled={isPending}
-          className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
-        >
-          {isPending ? "..." : "Confirmer"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setConfirming(false)}
-          disabled={isPending}
-          className="rounded-md border border-ink-200 px-2 py-1 text-xs font-medium text-ink-600 transition hover:bg-ink-50"
-        >
-          Annuler
-        </button>
+      <div className="flex flex-col items-end gap-1">
+        {/* Avertissement en interface plutôt qu'en window.confirm() : cette
+            API navigateur peut être neutralisée en silence par un bloqueur de
+            popups (elle renvoie alors `false` sans jamais rien afficher), ce
+            qui faisait échouer la suppression sans aucune trace. */}
+        <p className="max-w-[220px] whitespace-normal text-right text-xs text-ink-500">
+          Supprimer « {vehicleLabel} » — relevés, photos et propositions associés inclus, sans retour possible.
+        </p>
+        <div className="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={isPending}
+            className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+          >
+            {isPending ? "..." : "Confirmer"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            disabled={isPending}
+            className="rounded-md border border-ink-200 px-2 py-1 text-xs font-medium text-ink-600 transition hover:bg-ink-50"
+          >
+            Annuler
+          </button>
+        </div>
       </div>
     );
   }
