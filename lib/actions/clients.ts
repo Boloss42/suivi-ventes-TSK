@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import { clientSchema } from "@/lib/validation";
@@ -187,24 +186,41 @@ export async function regenerateInviteLink(
   return { inviteUrl, qrSvg };
 }
 
-export async function deleteClient(formData: FormData) {
+export type DeleteClientState = { error?: string };
+
+/**
+ * Suppression d'un client (et de son compte de connexion). Bloquée tant qu'il
+ * a des véhicules associés (pas de suppression en cascade de l'historique
+ * véhicule depuis ici — il faut d'abord les retirer). Renvoie une erreur
+ * explicite plutôt que de lever une exception : voir deleteVehicle pour le
+ * même raisonnement (un throw dans une action appelée en fire-and-forget
+ * laisse l'agent sans aucun retour visible).
+ */
+export async function deleteClient(formData: FormData): Promise<DeleteClientState> {
   const { agencyId, userId } = await requireStaff();
   const clientId = formData.get("clientId") as string;
 
   const client = await prisma.client.findFirst({
     where: { id: clientId, agencyId, assignedStaffId: userId },
   });
-  if (!client) return;
+  if (!client) {
+    return { error: "Client introuvable (déjà supprimé ou non autorisé)." };
+  }
 
   const vehicleCount = await prisma.vehicle.count({ where: { clientId } });
   if (vehicleCount > 0) {
-    throw new Error(
-      "Impossible de supprimer un client ayant des véhicules associés.",
-    );
+    return {
+      error: `Impossible de supprimer : ce client a encore ${vehicleCount} véhicule${vehicleCount > 1 ? "s" : ""} associé${vehicleCount > 1 ? "s" : ""}. Supprimez-le${vehicleCount > 1 ? "s" : ""} d'abord.`,
+    };
   }
 
-  await prisma.user.delete({ where: { id: client.userId } });
+  try {
+    await prisma.user.delete({ where: { id: client.userId } });
+  } catch (error) {
+    console.error("[deleteClient] échec de la suppression :", error);
+    return { error: "La suppression a échoué. Réessayez." };
+  }
 
   revalidatePath("/staff/clients");
-  redirect("/staff/clients");
+  return {};
 }
