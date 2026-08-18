@@ -77,17 +77,28 @@ export async function saveVehiclePhoto(vehicleId: string, file: File): Promise<s
   return `${publicBaseUrl()}/${key}`;
 }
 
+/**
+ * Suppression best-effort d'une photo sur R2 : ne doit JAMAIS faire échouer
+ * l'appelant (suppression d'un véhicule ou d'une photo déjà actée en base).
+ * Toute la fonction est protégée, y compris la construction de l'URL/du
+ * client (qui peuvent lever si une variable R2 est mal configurée) — avant,
+ * seul l'appel S3 final était protégé, ce qui laissait une suppression de
+ * véhicule échouer silencieusement (DB déjà supprimée, mais l'exception
+ * empêchait revalidatePath : la fiche restait affichée comme si de rien).
+ */
 export async function deleteVehiclePhotoFile(url: string): Promise<void> {
-  const base = `${publicBaseUrl()}/`;
-  // On ne supprime que les objets réellement stockés sur notre bucket R2.
-  // Les anciennes URLs locales (/uploads/...) sont ignorées (fichiers déjà
-  // perdus sur le FS éphémère) pour ne pas bloquer une suppression de véhicule.
-  if (!url.startsWith(base)) return;
+  try {
+    const base = `${publicBaseUrl()}/`;
+    // On ne supprime que les objets réellement stockés sur notre bucket R2.
+    // Les anciennes URLs locales (/uploads/...) sont ignorées (fichiers déjà
+    // perdus sur le FS éphémère) pour ne pas bloquer une suppression de véhicule.
+    if (!url.startsWith(base)) return;
 
-  const key = url.slice(base.length);
-  if (!key) return;
+    const key = url.slice(base.length);
+    if (!key) return;
 
-  await getClient()
-    .send(new DeleteObjectCommand({ Bucket: requireEnv("R2_BUCKET_NAME"), Key: key }))
-    .catch(() => {});
+    await getClient().send(new DeleteObjectCommand({ Bucket: requireEnv("R2_BUCKET_NAME"), Key: key }));
+  } catch (error) {
+    console.error("[deleteVehiclePhotoFile] échec de la suppression R2 (ignoré) :", error);
+  }
 }

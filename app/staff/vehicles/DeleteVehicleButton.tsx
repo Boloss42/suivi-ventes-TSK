@@ -11,6 +11,7 @@ export default function DeleteVehicleButton({
   vehicleLabel: string;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleConfirm() {
@@ -23,8 +24,16 @@ export default function DeleteVehicleButton({
     }
     const formData = new FormData();
     formData.set("vehicleId", vehicleId);
-    startTransition(() => {
-      deleteVehicle(formData);
+    setError(null);
+    // Important : on attend le résultat (au lieu d'un fire-and-forget) pour
+    // pouvoir afficher une erreur au lieu de laisser l'agent croire que rien
+    // ne s'est passé si la suppression échoue côté serveur.
+    startTransition(async () => {
+      const result = await deleteVehicle(formData);
+      if (result?.error) {
+        setError(result.error);
+        setConfirming(false);
+      }
     });
   }
 
@@ -52,7 +61,7 @@ export default function DeleteVehicleButton({
   }
 
   return (
-    <div className="flex justify-end">
+    <div className="flex flex-col items-end gap-1">
       <button
         type="button"
         onClick={() => setConfirming(true)}
@@ -76,6 +85,9 @@ export default function DeleteVehicleButton({
           <path d="M14 11v6" />
         </svg>
       </button>
+      {error && (
+        <p className="max-w-[180px] whitespace-normal text-right text-xs text-red-600">{error}</p>
+      )}
     </div>
   );
 }

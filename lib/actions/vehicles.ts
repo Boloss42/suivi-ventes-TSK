@@ -418,7 +418,9 @@ export async function updateVehicle(
   redirect(`/staff/vehicles/${vehicleId}${photoError ? "?photoError=1" : ""}`);
 }
 
-export async function deleteVehicle(formData: FormData) {
+export type DeleteVehicleState = { error?: string };
+
+export async function deleteVehicle(formData: FormData): Promise<DeleteVehicleState> {
   const { agencyId, userId } = await requireStaff();
   const vehicleId = formData.get("vehicleId") as string;
 
@@ -426,15 +428,27 @@ export async function deleteVehicle(formData: FormData) {
     where: { id: vehicleId, agencyId, client: { assignedStaffId: userId } },
     include: { photos: true },
   });
-  if (!vehicle) return;
+  if (!vehicle) {
+    return { error: "Véhicule introuvable (déjà supprimé ou non autorisé)." };
+  }
 
-  await prisma.vehicle.delete({ where: { id: vehicleId } });
+  try {
+    await prisma.vehicle.delete({ where: { id: vehicleId } });
+  } catch (error) {
+    console.error("[deleteVehicle] échec de la suppression :", error);
+    return { error: "La suppression a échoué. Réessayez." };
+  }
 
+  // Nettoyage best-effort des fichiers R2 : ne peut plus faire échouer cette
+  // action (voir deleteVehiclePhotoFile) — le véhicule est de toute façon déjà
+  // supprimé en base à ce stade.
   await Promise.all(vehicle.photos.map((photo) => deleteVehiclePhotoFile(photo.url)));
 
   revalidatePath("/staff/vehicles");
   revalidatePath("/staff/dashboard");
   revalidatePath(`/staff/clients/${vehicle.clientId}`);
+
+  return {};
 }
 
 export async function deletePhoto(formData: FormData) {
